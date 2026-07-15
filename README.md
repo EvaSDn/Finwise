@@ -1,6 +1,6 @@
 # Finwise — Simulateur de portefeuille pédagogique
 
-Application web complète : portefeuille virtuel sur cours réels, workflow budget façon Finary, plan de versements DCA, alertes de concentration, actualités filtrées et agent IA.
+Application web complète : portefeuille virtuel sur cours réels, workflow budget façon Finary, plan de versements DCA, alertes de concentration, actualités filtrées et agent.
 
 ## Démarrage rapide
 

@@ -50,7 +50,9 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:"],
+      // https: est nécessaire pour les vignettes des actualités (images de sources
+      // tierces variées — presse, agences) ; on ne peut pas whitelister un domaine fixe.
+      imgSrc: ["'self'", "data:", "https:"],
       scriptSrc: ["'self'"],
       connectSrc: ["'self'"],
     },
@@ -90,7 +92,7 @@ const server = app.listen(PORT, () => {
     : "✓ Live market data via Finnhub.");
   const engine = process.env.ANTHROPIC_API_KEY ? "Anthropic (Claude)"
     : process.env.GEMINI_API_KEY ? "Google Gemini"
-    : null;
+      : null;
   console.log(engine
     ? `✓ Agent IA propulsé par ${engine}.`
     : "⚠ Aucune clé ANTHROPIC_API_KEY / GEMINI_API_KEY — agent en mode règles.");

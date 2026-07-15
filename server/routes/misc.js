@@ -2,21 +2,30 @@ import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { requireAuth } from "../middleware/auth.js";
 import { getHoldings, findUserById } from "../db.js";
-import { getNewsForSymbols } from "../services/news.js";
+import { getMarketNews, NEWS_CATEGORIES } from "../services/news.js";
 import { getQuotes } from "../services/market.js";
 import { analyzePortfolio, agentReply } from "../services/agent.js";
 
 const router = Router();
 router.use(requireAuth);
 
-/* ---------- NEWS: real headlines, filtered to what the user holds ---------- */
-router.get("/news", async (req, res) => {
+/* ---------- NEWS: multi-catégorie (actions, ETF, crypto, obligations,
+   matières premières, devises, entreprises) + flux personnalisé ---------- */
+const NEWS_CATEGORY_IDS = new Set(NEWS_CATEGORIES.map(c => c.id));
+const newsLimiter = rateLimit({ windowMs: 60_000, max: 30, standardHeaders: true, legacyHeaders: false });
+
+router.get("/news", newsLimiter, async (req, res) => {
   const holdings = getHoldings.all(req.userId);
-  const symbols = holdings.map(h => h.symbol);
-  if (!symbols.length) return res.json({ items: [], symbols: [] });
-  const items = await getNewsForSymbols(symbols);
-  res.json({ items, symbols });
+  const heldSymbols = holdings.map(h => h.symbol);
+  const category = NEWS_CATEGORY_IDS.has(req.query.category) ? req.query.category : "all";
+  if (category === "portfolio" && !heldSymbols.length) {
+    return res.json({ items: [], heldSymbols: [], category });
+  }
+  const items = await getMarketNews({ category, heldSymbols });
+  res.json({ items, heldSymbols, category });
 });
+
+router.get("/news/categories", (req, res) => res.json(NEWS_CATEGORIES));
 
 /* ---------- AGENT ---------- */
 async function buildAnalysis(userId) {

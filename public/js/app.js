@@ -18,8 +18,10 @@ const State = {
   view: "dashboard",
   breakdownView: "sector",  // 'sector' | 'country'
   trade: { symbol: null, side: "buy", qty: 1, amount: 100, inputMode: "qty", detail: null },
-  newsFilter: "all",
-  newsItems: [],
+  newsCategory: "all",
+  newsSymbolFilter: "all",
+  newsCache: {},             // category -> { at, items }
+  newsAutoTimer: null,
   chat: [],                 // { role:'user'|'assistant', content }
   insights: null,
   pollTimer: null,
@@ -210,7 +212,24 @@ const icon = {
   check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.3 2.3L15.5 10"/></svg>`,
   user: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.5-3.5 4.2-5 7-5s5.5 1.5 7 5"/></svg>`,
   admin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 12.5h8M8 16h4"/></svg>`,
+  refresh: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg>`,
 };
+
+/* --------------------------------------------------------- news config -- */
+const NEWS_CATS = [
+  { id: "all", label: "Tout" },
+  { id: "portfolio", label: "Mon portefeuille" },
+  { id: "marches", label: "Marchés" },
+  { id: "actions", label: "Actions" },
+  { id: "etf", label: "ETF" },
+  { id: "obligations", label: "Obligations" },
+  { id: "matieres-premieres", label: "Mat. premières" },
+  { id: "devises", label: "Devises" },
+  { id: "crypto", label: "Crypto" },
+  { id: "entreprises", label: "Entreprises" },
+];
+const NEWS_CAT_LABEL = Object.fromEntries(NEWS_CATS.map(c => [c.id, c.label]));
+const NEWS_AUTOREFRESH_MS = 120_000; // quasi temps réel, respecte le quota gratuit de l'API
 
 /* ============================================================== AUTH ==== */
 function renderAuth(mode = "login") {
@@ -507,7 +526,10 @@ function startPolling() {
   stopPolling();
   State.pollTimer = setInterval(pollQuotes, 15000);
 }
-function stopPolling() { clearInterval(State.pollTimer); State.pollTimer = null; }
+function stopPolling() {
+  clearInterval(State.pollTimer); State.pollTimer = null;
+  clearInterval(State.newsAutoTimer); State.newsAutoTimer = null;
+}
 
 async function pollQuotes() {
   if (!State.portfolio) return;
@@ -1144,7 +1166,7 @@ async function placeOrder() {
   try {
     const res = await API.post("/api/portfolio/order", { symbol: d.symbol, side, qty });
     await refreshPortfolio();
-    State.newsItems = [];
+    State.newsCache = {}; // holdings changed → le flux personnalisé doit être rechargé
     toast(`Ordre exécuté : ${fmtQty(res.qty ?? qty)} × ${fmtEur(res.executedPrice, 2)} — total ${fmtEur(res.total, 2)} ✓`, "success");
     renderTrading();
   } catch (e) {
@@ -1154,45 +1176,147 @@ async function placeOrder() {
 }
 
 /* ================================================================= NEWS = */
-async function renderNews() {
-  const held = State.portfolio.positions.map(p => p.symbol);
-  $("#view-root").innerHTML = `<div class="view">
-    <div class="news-filters" id="news-filters">
-      <button class="filter-chip ${State.newsFilter === "all" ? "active" : ""}" data-nf="all">Toutes mes positions</button>
-      ${held.map(s => `<button class="filter-chip ${State.newsFilter === s ? "active" : ""}" data-nf="${esc(s)}">${esc(s)}</button>`).join("")}
-    </div>
-    <div class="news-list" id="news-list"><div class="empty-state">Chargement des actualités…</div></div>
-  </div>`;
-  $("#news-filters").querySelectorAll("[data-nf]").forEach(b =>
-    b.addEventListener("click", () => { State.newsFilter = b.dataset.nf; renderNews(); }));
+function newsThumbHtml(n) {
+  return n.image
+    ? `<img src="${esc(n.image)}" alt="" class="news-thumb" loading="lazy">`
+    : `<div class="news-thumb news-thumb-fallback">${icon.news}</div>`;
+}
 
-  if (!held.length) {
-    $("#news-list").innerHTML = `<div class="empty-state"><b>Aucune position, donc aucune actualité filtrée.</b><br>Le flux n'affiche que les nouvelles des actions que vous détenez.</div>`;
-    return;
-  }
-  try {
-    if (!State.newsItems.length) {
-      const res = await API.get("/api/news");
-      State.newsItems = res.items || [];
-    }
-    const items = State.newsItems.filter(n => State.newsFilter === "all" || n.symbol === State.newsFilter);
-    $("#news-list").innerHTML = items.length ? items.map(n => `
-      <div class="news-card">
-        <div style="flex:1;">
-          <div class="news-meta">
-            <span class="news-stock-badge">${esc(n.symbol)}</span>
-            <span class="news-source">${esc(n.source || "")}</span>
-            <span class="news-time">· il y a ${timeAgo(n.datetime)}</span>
-          </div>
-          <div class="news-headline">${n.url ? `<a href="${esc(n.url)}" target="_blank" rel="noopener noreferrer">${esc(n.headline)}</a>` : esc(n.headline)}</div>
-          <div class="news-summary">${esc(n.summary || "")}</div>
+function newsCardHtml(n) {
+  const companies = (n.relatedSymbols || []).slice(0, 4)
+    .map(s => `<span class="news-stock-badge">${esc(s.symbol)}</span>`).join("");
+  return `
+    <button class="news-card" type="button" data-news-id="${esc(n.id)}">
+      ${newsThumbHtml(n)}
+      <div class="news-card-body">
+        <div class="news-meta">
+          <span class="tag news-cat-tag">${esc(NEWS_CAT_LABEL[n.category] || n.category)}</span>
+          ${n.personalized ? `<span class="tag positive">Votre portefeuille</span>` : ""}
+          <span class="news-source">${esc(n.source || "")}</span>
+          <span class="news-time">· il y a ${timeAgo(n.datetime)}</span>
         </div>
-      </div>`).join("")
-      : `<div class="empty-state">Aucune actualité récente pour ce filtre.</div>`;
+        <div class="news-headline">${esc(n.headline)}</div>
+        <div class="news-summary">${esc(n.summary || "")}</div>
+        ${companies ? `<div class="news-companies">${companies}</div>` : ""}
+      </div>
+    </button>`;
+}
+
+function newsEmptyMessage(category, held) {
+  if (category === "portfolio" && !held.length) {
+    return `<div class="empty-state"><b>Aucune position pour le moment.</b><br>Alimentez votre compte puis passez un ordre dans « Investir » : votre flux personnalisé apparaîtra ici.</div>`;
+  }
+  return `<div class="empty-state">Aucune actualité pour ce filtre pour le moment.</div>`;
+}
+
+async function fetchNewsCategory(category, { force = false } = {}) {
+  const cached = State.newsCache[category];
+  if (!force && cached && Date.now() - cached.at < NEWS_AUTOREFRESH_MS) return cached.items;
+  const res = await API.get("/api/news?category=" + encodeURIComponent(category));
+  State.newsCache[category] = { at: Date.now(), items: res.items || [] };
+  return State.newsCache[category].items;
+}
+
+async function loadNews({ force = false } = {}) {
+  const held = State.portfolio.positions.map(p => p.symbol);
+  const listEl = $("#news-list");
+  const symFiltersEl = $("#news-sym-filters");
+  if (!listEl) return;
+
+  if (State.newsCategory === "portfolio" && held.length) {
+    symFiltersEl.style.display = "flex";
+    symFiltersEl.innerHTML = [`<button class="filter-chip ${State.newsSymbolFilter === "all" ? "active" : ""}" data-nf="all">Toutes mes positions</button>`,
+      ...held.map(s => `<button class="filter-chip ${State.newsSymbolFilter === s ? "active" : ""}" data-nf="${esc(s)}">${esc(s)}</button>`)].join("");
+    symFiltersEl.querySelectorAll("[data-nf]").forEach(b =>
+      b.addEventListener("click", () => { State.newsSymbolFilter = b.dataset.nf; loadNews(); }));
+  } else {
+    symFiltersEl.style.display = "none";
+    symFiltersEl.innerHTML = "";
+  }
+
+  listEl.innerHTML = `<div class="empty-state">Chargement des actualités…</div>`;
+  try {
+    let items = await fetchNewsCategory(State.newsCategory, { force });
+    if (State.newsCategory === "portfolio" && State.newsSymbolFilter !== "all") {
+      items = items.filter(n => (n.relatedSymbols || []).some(s => s.symbol === State.newsSymbolFilter));
+    }
+    listEl.innerHTML = items.length ? items.map(newsCardHtml).join("") : newsEmptyMessage(State.newsCategory, held);
+
+    listEl.querySelectorAll("[data-news-id]").forEach(el =>
+      el.addEventListener("click", () => openNewsModal(items.find(n => n.id === el.dataset.newsId))));
+    listEl.querySelectorAll("img.news-thumb").forEach(img =>
+      img.addEventListener("error", () => { img.outerHTML = `<div class="news-thumb news-thumb-fallback">${icon.news}</div>`; }));
   } catch (e) {
-    $("#news-list").innerHTML = `<div class="empty-state">Impossible de charger les actualités pour le moment.</div>`;
+    listEl.innerHTML = `<div class="empty-state">Impossible de charger les actualités pour le moment.</div>`;
   }
 }
+
+function scheduleNewsAutoRefresh() {
+  clearInterval(State.newsAutoTimer);
+  State.newsAutoTimer = setInterval(() => {
+    if (State.view === "news") loadNews({ force: true });
+  }, NEWS_AUTOREFRESH_MS);
+}
+
+async function renderNews() {
+  const held = State.portfolio.positions.map(p => p.symbol);
+  const cats = NEWS_CATS.filter(c => c.id !== "portfolio" || held.length);
+
+  $("#view-root").innerHTML = `<div class="view">
+    <div class="news-toolbar">
+      <div class="news-filters" id="news-cat-filters">
+        ${cats.map(c => `<button class="filter-chip ${State.newsCategory === c.id ? "active" : ""}" data-cat="${c.id}">${esc(c.label)}</button>`).join("")}
+      </div>
+      <button class="btn-ghost news-refresh-btn" id="news-refresh" type="button">${icon.refresh}<span>Actualiser</span></button>
+    </div>
+    <div class="news-filters" id="news-sym-filters" style="display:none;"></div>
+    <div class="news-list" id="news-list"><div class="empty-state">Chargement des actualités…</div></div>
+  </div>`;
+
+  $("#news-cat-filters").querySelectorAll("[data-cat]").forEach(b =>
+    b.addEventListener("click", () => {
+      State.newsCategory = b.dataset.cat;
+      State.newsSymbolFilter = "all";
+      renderNews();
+    }));
+  $("#news-refresh").addEventListener("click", () => loadNews({ force: true }));
+
+  await loadNews();
+  scheduleNewsAutoRefresh();
+}
+
+/* -------------------------------------------------- news detail window -- */
+function openNewsModal(item) {
+  if (!item) return;
+  const bd = $("#news-modal-backdrop");
+  $("#news-modal-image").innerHTML = item.image ? `<img src="${esc(item.image)}" alt="" class="news-modal-img">` : "";
+  $("#news-modal-meta").innerHTML = `
+    <span class="tag news-cat-tag">${esc(NEWS_CAT_LABEL[item.category] || item.category)}</span>
+    ${item.personalized ? `<span class="tag positive">Votre portefeuille</span>` : ""}
+    <span class="news-source">${esc(item.source || "")}</span>
+    <span class="news-time">· ${new Date(item.datetime).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</span>`;
+  $("#news-modal-title").textContent = item.headline;
+  $("#news-modal-summary").textContent = item.summary || "Pas de résumé disponible pour cet article.";
+
+  const companies = item.relatedSymbols || [];
+  const companiesEl = $("#news-modal-companies");
+  companiesEl.innerHTML = companies.length ? `
+    <div class="card-title" style="margin:16px 0 8px;font-size:12px;">Entreprises / actifs concernés</div>
+    <div class="news-companies">${companies.map(c =>
+      `<button class="news-stock-badge news-stock-badge-link" type="button" data-goto="${esc(c.symbol)}">${esc(c.symbol)} · ${esc(c.name)}</button>`).join("")}</div>` : "";
+  companiesEl.querySelectorAll("[data-goto]").forEach(b =>
+    b.addEventListener("click", () => { closeNewsModal(); State.trade.symbol = b.dataset.goto; navigate("trading"); }));
+
+  const linkEl = $("#news-modal-link");
+  if (item.url) { linkEl.href = item.url; linkEl.style.display = "inline-flex"; }
+  else linkEl.style.display = "none";
+
+  bd.classList.add("open");
+  bd.onclick = e => { if (e.target === bd) closeNewsModal(); };
+  $("#news-modal-close").onclick = closeNewsModal;
+  $("#news-modal-ok").onclick = closeNewsModal;
+}
+function closeNewsModal() { $("#news-modal-backdrop").classList.remove("open"); }
 
 /* ================================================================ AGENT = */
 async function renderAgent() {

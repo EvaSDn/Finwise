@@ -144,12 +144,14 @@ async function geminiReply(message, analysis, history) {
     signal: AbortSignal.timeout(30_000),
   });
 
+  // Le plan gratuit a un quota par minute bas et peut renvoyer un 429/503
+  // ponctuel (surcharge momentanée) ; deux tentatives supplémentaires avec
+  // pause croissante absorbent la grande majorité des cas réels sans
+  // transformer ça en boucle infinie (le timeout de 30s par appel borne le pire cas).
   let res = await call();
-  if (res.status === 429) {
-    // Le plan gratuit a un quota par minute très bas ; une courte pause suivie
-    // d'une seule nouvelle tentative absorbe la grande majorité des 429
-    // rencontrés en usage normal (pas une boucle de retry — juste un essai de plus).
-    await new Promise(r => setTimeout(r, 2500));
+  for (const delayMs of [2000, 4000]) {
+    if (res.status !== 429 && res.status !== 503) break;
+    await new Promise(r => setTimeout(r, delayMs));
     res = await call();
   }
   if (!res.ok) throw new Error(`GEMINI_${res.status}`);
@@ -251,7 +253,7 @@ const RULES = [
     fn: () => `Une action est une part de propriété d'une entreprise : vous détenez un morceau de ses bénéfices futurs. Son cours varie en continu selon l'offre et la demande. Pour débuter sereinement : 1) se constituer d'abord une épargne de précaution, 2) investir régulièrement (DCA) plutôt que tout d'un coup, 3) diversifier (un ETF Monde fait l'essentiel du travail), 4) n'investir que ce dont on n'a pas besoin avant 8 ans. Ce simulateur est là pour pratiquer tout ça sans risque.`,
   },
   {
-    re: /(action[s]? fran[çc]aise|cac ?40|conseil.*action|quelle action (acheter|choisir)|quelles? actions? (acheter|choisir))/,
+    re: /(action[s]? fran[çc]ais|cac ?40|conseil.*action|action.*conseil|quelle[s]? action|action.*(acheter|choisir|d[ée]marr|commenc))/,
     fn: () => `Je suis un outil pédagogique : je ne peux pas vous recommander d'acheter telle ou telle action précise — ce serait du conseil en investissement réel, hors de mon rôle ici. Ce que je peux faire : vous aider à analyser. Le CAC 40 regroupe les plus grandes capitalisations cotées à Paris ; vous en trouverez plusieurs dans l'onglet Investir (LVMH, L'Oréal, TotalEnergies, Sanofi, BNP Paribas, Airbus, Safran, Schneider Electric…). Pour comparer deux actions, regardez leur secteur, leur PER, leur dividende et leur volatilité — je peux vous expliquer chacun de ces critères. Lequel vous intéresse ?`,
   },
 ];

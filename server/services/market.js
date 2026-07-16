@@ -175,27 +175,41 @@ function normalizeSector(raw) {
 /* ------------------------------------------------------------------ */
 const TWELVEDATA_KEY = process.env.TWELVEDATA_API_KEY || "";
 const TWELVEDATA_BASE = "https://api.twelvedata.com";
+
 // Twelve Data désambiguïse un ticker par place boursière via son paramètre
-// `exchange` plutôt que par un suffixe façon ".PA" — mapping best-effort à
-// partir du pays déjà connu dans KNOWN_ASSETS. Pas vérifié en conditions
-// réelles (voir AUDIT.md) : à confirmer/ajuster une fois testé avec une
-// vraie clé et un accès réseau vers api.twelvedata.com.
-const TWELVEDATA_EXCHANGE = { FR: "Euronext", DE: "XETRA", NL: "Euronext" };
+// `exchange` plutôt que par un suffixe façon ".PA". Mapping suffixe → nom
+// d'exchange, vérifié le 2026-07-16 par appel réel à /symbol_search
+// (Air Liquide/AI.PA → symbol "AI", exchange "Euronext" ; ADR allemandes →
+// exchange "XETR", pas "XETRA"). Le reste (SW/MI/T/HK) n'est pas encore
+// vérifié — voir AUDIT.md.
+const SUFFIX_EXCHANGE = {
+  PA: "Euronext", AS: "Euronext", BR: "Euronext", LS: "Euronext",
+  DE: "XETR", L: "LSE", SW: "SIX", MI: "Milan", T: "Tokyo", HK: "HKEX",
+};
+// Rempli à la volée par twelveDataSearch() : symbole -> {exchange, mic_code}
+// tels que renvoyés par Twelve Data lui-même pour CE symbole précis — plus
+// fiable que le mapping générique par suffixe ci-dessus quand disponible.
+const twelveDataExchangeHints = new Map();
+
+function symbolAttempts(symbol) {
+  const attempts = [];
+  const hint = twelveDataExchangeHints.get(symbol);
+  const base = symbol.includes(".") ? symbol.split(".")[0] : symbol;
+  const suffix = symbol.includes(".") ? symbol.split(".").pop().toUpperCase() : null;
+  if (hint) attempts.push({ symbol: hint.symbol || base, exchange: hint.exchange, mic_code: hint.mic_code });
+  if (suffix && SUFFIX_EXCHANGE[suffix]) attempts.push({ symbol: base, exchange: SUFFIX_EXCHANGE[suffix] });
+  attempts.push({ symbol }); // dernier recours : tel quel
+  return attempts;
+}
 
 async function twelveDataQuote(symbol) {
   if (!TWELVEDATA_KEY) return null;
-  const meta = BY_SYMBOL.get(symbol);
-  const base = symbol.includes(".") ? symbol.split(".")[0] : symbol;
-  const exchange = meta?.country && TWELVEDATA_EXCHANGE[meta.country];
-  // Deux essais : le symbole tel quel (peut fonctionner directement pour
-  // certaines places), puis ticker nu + place boursière explicite.
-  const attempts = [{ symbol }, ...(exchange ? [{ symbol: base, exchange }] : [])];
-
-  for (const attempt of attempts) {
+  for (const attempt of symbolAttempts(symbol)) {
     try {
       const url = new URL(`${TWELVEDATA_BASE}/quote`);
       url.searchParams.set("symbol", attempt.symbol);
       if (attempt.exchange) url.searchParams.set("exchange", attempt.exchange);
+      else if (attempt.mic_code) url.searchParams.set("mic_code", attempt.mic_code);
       url.searchParams.set("apikey", TWELVEDATA_KEY);
       const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
       if (!res.ok) continue;
@@ -222,6 +236,12 @@ async function twelveDataSearch(q) {
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return [];
     const data = await res.json();
+    // On mémorise l'exchange/mic_code réels de Twelve Data pour ce symbole
+    // précis : réutilisé par twelveDataQuote() pour interroger /quote avec
+    // les bons paramètres au lieu de deviner à partir d'un suffixe générique.
+    for (const x of data?.data || []) {
+      if (x.symbol) twelveDataExchangeHints.set(x.symbol, { symbol: x.symbol, exchange: x.exchange, mic_code: x.mic_code });
+    }
     return (data?.data || []).slice(0, 10).map(x => ({
       symbol: x.symbol,
       description: x.instrument_name ? `${x.instrument_name}${x.exchange ? " · " + x.exchange : ""}` : x.symbol,

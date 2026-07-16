@@ -9,7 +9,11 @@
  */
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || "";
 const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+// "gemini-flash-latest" est l'alias maintenu par Google vers le modèle flash
+// courant éligible au plan gratuit — "gemini-2.0-flash" est resté figé en dur
+// dans une version antérieure du projet et son quota gratuit est retombé à 0
+// (modèle daté). Vérifié empiriquement le 2026-07-15 avec une clé réelle.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
 const SECTOR_THRESHOLD = 50;
 const CORRECTION_SCENARIO = 0.20;
 
@@ -108,7 +112,7 @@ async function claudeReply(message, analysis, history) {
       system: buildSystemPrompt(analysis),
       messages: [...history, { role: "user", content: message }],
     }),
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`ANTHROPIC_${res.status}`);
   const data = await res.json();
@@ -122,16 +126,32 @@ async function geminiReply(message, analysis, history) {
     ...history.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
     { role: "user", parts: [{ text: message }] },
   ];
-  const res = await fetch(url, {
+  const body = JSON.stringify({
+    system_instruction: { parts: [{ text: buildSystemPrompt(analysis) }] },
+    contents,
+    // thinkingBudget: 0 désactive le raisonnement interne des modèles Gemini
+    // récents (2.5+) : sans ça, les tokens de "réflexion" invisible peuvent
+    // consommer tout maxOutputTokens et couper la réponse visible
+    // (observé avec gemini-flash-latest → gemini-3.5-flash, finishReason
+    // MAX_TOKENS avant toute réponse utile). Pas besoin de raisonnement
+    // long pour des réponses pédagogiques courtes et ancrées sur l'analyse.
+    generationConfig: { maxOutputTokens: 800, temperature: 0.7, thinkingConfig: { thinkingBudget: 0 } },
+  });
+  const call = () => fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: buildSystemPrompt(analysis) }] },
-      contents,
-      generationConfig: { maxOutputTokens: 600, temperature: 0.7 },
-    }),
-    signal: AbortSignal.timeout(20_000),
+    body,
+    signal: AbortSignal.timeout(30_000),
   });
+
+  let res = await call();
+  if (res.status === 429) {
+    // Le plan gratuit a un quota par minute très bas ; une courte pause suivie
+    // d'une seule nouvelle tentative absorbe la grande majorité des 429
+    // rencontrés en usage normal (pas une boucle de retry — juste un essai de plus).
+    await new Promise(r => setTimeout(r, 2500));
+    res = await call();
+  }
   if (!res.ok) throw new Error(`GEMINI_${res.status}`);
   const data = await res.json();
   const parts = data?.candidates?.[0]?.content?.parts || [];
@@ -230,6 +250,10 @@ const RULES = [
     re: /(bourse|marché|marche|action c'est quoi|comment ça marche|comment ca marche|débuter|debuter|commencer)/,
     fn: () => `Une action est une part de propriété d'une entreprise : vous détenez un morceau de ses bénéfices futurs. Son cours varie en continu selon l'offre et la demande. Pour débuter sereinement : 1) se constituer d'abord une épargne de précaution, 2) investir régulièrement (DCA) plutôt que tout d'un coup, 3) diversifier (un ETF Monde fait l'essentiel du travail), 4) n'investir que ce dont on n'a pas besoin avant 8 ans. Ce simulateur est là pour pratiquer tout ça sans risque.`,
   },
+  {
+    re: /(action[s]? fran[çc]aise|cac ?40|conseil.*action|quelle action (acheter|choisir)|quelles? actions? (acheter|choisir))/,
+    fn: () => `Je suis un outil pédagogique : je ne peux pas vous recommander d'acheter telle ou telle action précise — ce serait du conseil en investissement réel, hors de mon rôle ici. Ce que je peux faire : vous aider à analyser. Le CAC 40 regroupe les plus grandes capitalisations cotées à Paris ; vous en trouverez plusieurs dans l'onglet Investir (LVMH, L'Oréal, TotalEnergies, Sanofi, BNP Paribas, Airbus, Safran, Schneider Electric…). Pour comparer deux actions, regardez leur secteur, leur PER, leur dividende et leur volatilité — je peux vous expliquer chacun de ces critères. Lequel vous intéresse ?`,
+  },
 ];
 
 function ruleBasedReply(message, a) {
@@ -244,12 +268,13 @@ function ruleBasedReply(message, a) {
       if (out) return out;
     }
   }
-  // Réponse par défaut : état du portefeuille + menu des sujets
+  // Aucune règle ne correspond : on le dit honnêtement plutôt que de renvoyer
+  // un texte générique qui donnerait l'impression que la question a été ignorée.
   const alertTxt = a.alerts.length ? a.alerts[0].message
     : "Aucune alerte de concentration en ce moment.";
   const classes = (a.classBreakdown || []).filter(c => c.label !== "Other")
     .map(c => `${CLASS_FR[c.label] || c.label} ${c.pct}%`).join(" · ");
-  return `Voici où en est votre portefeuille : ${fmt(a.invested)} investis, ${fmt(a.cash)} de liquidités${classes ? ` (${classes})` : ""}. ${alertTxt}\n\nJe peux vous expliquer : le risque et la diversification, le DCA, les intérêts composés, les ETF, les obligations, les crypto-actifs, l'assurance vie, les dividendes, le PER, l'inflation, les frais ou l'horizon de placement. Quel sujet vous intéresse ?`;
+  return `Je n'ai pas de réponse toute prête pour cette question précise (mode "règles" — sans connexion à un moteur IA en ce moment). Voici où en est votre portefeuille en attendant : ${fmt(a.invested)} investis, ${fmt(a.cash)} de liquidités${classes ? ` (${classes})` : ""}. ${alertTxt}\n\nJe peux en revanche vous expliquer en détail : le risque et la diversification, le DCA, les intérêts composés, les ETF, les obligations, les crypto-actifs, l'assurance vie, les dividendes, le PER, l'inflation, les frais, l'horizon de placement, ou les actions françaises/CAC 40. Quel sujet vous intéresse ?`;
 }
 
 /* Priorité des moteurs : Anthropic > Gemini > règles.

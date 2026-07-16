@@ -89,10 +89,10 @@ const server = app.listen(PORT, () => {
   console.log(`Finwise running on http://localhost:${PORT}`);
   console.log(DEMO_MODE
     ? "⚠ DEMO MODE: no FINNHUB_API_KEY set — simulated market data & news."
-    : "✓ Live market data via Finnhub.");
+    : "✓ Live market data via Finnhub." + (process.env.TWELVEDATA_API_KEY ? " + Twelve Data (Europe/Asie)." : ""));
   const engine = process.env.ANTHROPIC_API_KEY ? "Anthropic (Claude)"
     : process.env.GEMINI_API_KEY ? "Google Gemini"
-      : null;
+    : null;
   console.log(engine
     ? `✓ Agent IA propulsé par ${engine}.`
     : "⚠ Aucune clé ANTHROPIC_API_KEY / GEMINI_API_KEY — agent en mode règles.");

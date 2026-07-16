@@ -17,66 +17,66 @@ const BASE = "https://finnhub.io/api/v1";
 /* ------------------------------------------------------------------ */
 export const KNOWN_ASSETS = [
   /* --- Actions US --- */
-  { symbol: "AAPL",  name: "Apple Inc.",            class: "stock", sector: "Technology",  country: "US", base: 231 },
-  { symbol: "MSFT",  name: "Microsoft Corp.",       class: "stock", sector: "Technology",  country: "US", base: 442 },
-  { symbol: "NVDA",  name: "NVIDIA Corp.",          class: "stock", sector: "Technology",  country: "US", base: 187 },
-  { symbol: "GOOGL", name: "Alphabet Inc.",         class: "stock", sector: "Technology",  country: "US", base: 178 },
-  { symbol: "META",  name: "Meta Platforms",        class: "stock", sector: "Technology",  country: "US", base: 592 },
-  { symbol: "AMZN",  name: "Amazon.com Inc.",       class: "stock", sector: "Consumer",    country: "US", base: 205 },
-  { symbol: "TSLA",  name: "Tesla Inc.",            class: "stock", sector: "Consumer",    country: "US", base: 265 },
-  { symbol: "NFLX",  name: "Netflix Inc.",          class: "stock", sector: "Technology",  country: "US", base: 890 },
-  { symbol: "JPM",   name: "JPMorgan Chase & Co.",  class: "stock", sector: "Finance",     country: "US", base: 248 },
-  { symbol: "GS",    name: "Goldman Sachs",         class: "stock", sector: "Finance",     country: "US", base: 585 },
-  { symbol: "V",     name: "Visa Inc.",             class: "stock", sector: "Finance",     country: "US", base: 291 },
-  { symbol: "MA",    name: "Mastercard Inc.",       class: "stock", sector: "Finance",     country: "US", base: 512 },
-  { symbol: "JNJ",   name: "Johnson & Johnson",     class: "stock", sector: "Healthcare",  country: "US", base: 158 },
-  { symbol: "PFE",   name: "Pfizer Inc.",           class: "stock", sector: "Healthcare",  country: "US", base: 27 },
-  { symbol: "LLY",   name: "Eli Lilly & Co.",       class: "stock", sector: "Healthcare",  country: "US", base: 782 },
-  { symbol: "XOM",   name: "Exxon Mobil Corp.",     class: "stock", sector: "Energy",      country: "US", base: 118 },
-  { symbol: "CVX",   name: "Chevron Corp.",         class: "stock", sector: "Energy",      country: "US", base: 152 },
-  { symbol: "KO",    name: "Coca-Cola Co.",         class: "stock", sector: "Consumer",    country: "US", base: 63 },
-  { symbol: "PEP",   name: "PepsiCo Inc.",          class: "stock", sector: "Consumer",    country: "US", base: 152 },
-  { symbol: "MCD",   name: "McDonald's Corp.",      class: "stock", sector: "Consumer",    country: "US", base: 295 },
-  { symbol: "NKE",   name: "Nike Inc.",             class: "stock", sector: "Consumer",    country: "US", base: 76 },
-  { symbol: "DIS",   name: "Walt Disney Co.",       class: "stock", sector: "Consumer",    country: "US", base: 112 },
-  { symbol: "BA",    name: "Boeing Co.",            class: "stock", sector: "Industrials", country: "US", base: 178 },
-  { symbol: "CAT",   name: "Caterpillar Inc.",      class: "stock", sector: "Industrials", country: "US", base: 385 },
+  { symbol: "AAPL", name: "Apple Inc.", class: "stock", sector: "Technology", country: "US", base: 231 },
+  { symbol: "MSFT", name: "Microsoft Corp.", class: "stock", sector: "Technology", country: "US", base: 442 },
+  { symbol: "NVDA", name: "NVIDIA Corp.", class: "stock", sector: "Technology", country: "US", base: 187 },
+  { symbol: "GOOGL", name: "Alphabet Inc.", class: "stock", sector: "Technology", country: "US", base: 178 },
+  { symbol: "META", name: "Meta Platforms", class: "stock", sector: "Technology", country: "US", base: 592 },
+  { symbol: "AMZN", name: "Amazon.com Inc.", class: "stock", sector: "Consumer", country: "US", base: 205 },
+  { symbol: "TSLA", name: "Tesla Inc.", class: "stock", sector: "Consumer", country: "US", base: 265 },
+  { symbol: "NFLX", name: "Netflix Inc.", class: "stock", sector: "Technology", country: "US", base: 890 },
+  { symbol: "JPM", name: "JPMorgan Chase & Co.", class: "stock", sector: "Finance", country: "US", base: 248 },
+  { symbol: "GS", name: "Goldman Sachs", class: "stock", sector: "Finance", country: "US", base: 585 },
+  { symbol: "V", name: "Visa Inc.", class: "stock", sector: "Finance", country: "US", base: 291 },
+  { symbol: "MA", name: "Mastercard Inc.", class: "stock", sector: "Finance", country: "US", base: 512 },
+  { symbol: "JNJ", name: "Johnson & Johnson", class: "stock", sector: "Healthcare", country: "US", base: 158 },
+  { symbol: "PFE", name: "Pfizer Inc.", class: "stock", sector: "Healthcare", country: "US", base: 27 },
+  { symbol: "LLY", name: "Eli Lilly & Co.", class: "stock", sector: "Healthcare", country: "US", base: 782 },
+  { symbol: "XOM", name: "Exxon Mobil Corp.", class: "stock", sector: "Energy", country: "US", base: 118 },
+  { symbol: "CVX", name: "Chevron Corp.", class: "stock", sector: "Energy", country: "US", base: 152 },
+  { symbol: "KO", name: "Coca-Cola Co.", class: "stock", sector: "Consumer", country: "US", base: 63 },
+  { symbol: "PEP", name: "PepsiCo Inc.", class: "stock", sector: "Consumer", country: "US", base: 152 },
+  { symbol: "MCD", name: "McDonald's Corp.", class: "stock", sector: "Consumer", country: "US", base: 295 },
+  { symbol: "NKE", name: "Nike Inc.", class: "stock", sector: "Consumer", country: "US", base: 76 },
+  { symbol: "DIS", name: "Walt Disney Co.", class: "stock", sector: "Consumer", country: "US", base: 112 },
+  { symbol: "BA", name: "Boeing Co.", class: "stock", sector: "Industrials", country: "US", base: 178 },
+  { symbol: "CAT", name: "Caterpillar Inc.", class: "stock", sector: "Industrials", country: "US", base: 385 },
   /* --- Actions françaises / européennes (CAC 40 & co) --- */
-  { symbol: "MC.PA",   name: "LVMH",                 class: "stock", sector: "Consumer",    country: "FR", base: 612 },
-  { symbol: "OR.PA",   name: "L'Oréal",              class: "stock", sector: "Consumer",    country: "FR", base: 348 },
-  { symbol: "RMS.PA",  name: "Hermès International", class: "stock", sector: "Consumer",    country: "FR", base: 2280 },
-  { symbol: "TTE.PA",  name: "TotalEnergies SE",     class: "stock", sector: "Energy",      country: "FR", base: 59 },
-  { symbol: "SAN.PA",  name: "Sanofi",               class: "stock", sector: "Healthcare",  country: "FR", base: 92 },
-  { symbol: "BNP.PA",  name: "BNP Paribas",          class: "stock", sector: "Finance",     country: "FR", base: 64 },
-  { symbol: "ACA.PA",  name: "Crédit Agricole",      class: "stock", sector: "Finance",     country: "FR", base: 15 },
-  { symbol: "GLE.PA",  name: "Société Générale",     class: "stock", sector: "Finance",     country: "FR", base: 28 },
-  { symbol: "AIR.PA",  name: "Airbus SE",            class: "stock", sector: "Industrials", country: "FR", base: 172 },
-  { symbol: "SAF.PA",  name: "Safran",               class: "stock", sector: "Industrials", country: "FR", base: 218 },
-  { symbol: "SU.PA",   name: "Schneider Electric",   class: "stock", sector: "Industrials", country: "FR", base: 238 },
-  { symbol: "CAP.PA",  name: "Capgemini",            class: "stock", sector: "Technology",  country: "FR", base: 158 },
-  { symbol: "DSY.PA",  name: "Dassault Systèmes",    class: "stock", sector: "Technology",  country: "FR", base: 34 },
-  { symbol: "STLAP.PA",name: "Stellantis",           class: "stock", sector: "Consumer",    country: "FR", base: 12 },
-  { symbol: "CA.PA",   name: "Carrefour",            class: "stock", sector: "Consumer",    country: "FR", base: 14 },
-  { symbol: "ENGI.PA", name: "Engie",                class: "stock", sector: "Energy",      country: "FR", base: 16 },
-  { symbol: "ASML",    name: "ASML Holding",         class: "stock", sector: "Technology",  country: "NL", base: 712 },
-  { symbol: "SAP",     name: "SAP SE",               class: "stock", sector: "Technology",  country: "DE", base: 242 },
+  { symbol: "MC.PA", name: "LVMH", class: "stock", sector: "Consumer", country: "FR", base: 612 },
+  { symbol: "OR.PA", name: "L'Oréal", class: "stock", sector: "Consumer", country: "FR", base: 348 },
+  { symbol: "RMS.PA", name: "Hermès International", class: "stock", sector: "Consumer", country: "FR", base: 2280 },
+  { symbol: "TTE.PA", name: "TotalEnergies SE", class: "stock", sector: "Energy", country: "FR", base: 59 },
+  { symbol: "SAN.PA", name: "Sanofi", class: "stock", sector: "Healthcare", country: "FR", base: 92 },
+  { symbol: "BNP.PA", name: "BNP Paribas", class: "stock", sector: "Finance", country: "FR", base: 64 },
+  { symbol: "ACA.PA", name: "Crédit Agricole", class: "stock", sector: "Finance", country: "FR", base: 15 },
+  { symbol: "GLE.PA", name: "Société Générale", class: "stock", sector: "Finance", country: "FR", base: 28 },
+  { symbol: "AIR.PA", name: "Airbus SE", class: "stock", sector: "Industrials", country: "FR", base: 172 },
+  { symbol: "SAF.PA", name: "Safran", class: "stock", sector: "Industrials", country: "FR", base: 218 },
+  { symbol: "SU.PA", name: "Schneider Electric", class: "stock", sector: "Industrials", country: "FR", base: 238 },
+  { symbol: "CAP.PA", name: "Capgemini", class: "stock", sector: "Technology", country: "FR", base: 158 },
+  { symbol: "DSY.PA", name: "Dassault Systèmes", class: "stock", sector: "Technology", country: "FR", base: 34 },
+  { symbol: "STLAP.PA", name: "Stellantis", class: "stock", sector: "Consumer", country: "FR", base: 12 },
+  { symbol: "CA.PA", name: "Carrefour", class: "stock", sector: "Consumer", country: "FR", base: 14 },
+  { symbol: "ENGI.PA", name: "Engie", class: "stock", sector: "Energy", country: "FR", base: 16 },
+  { symbol: "ASML", name: "ASML Holding", class: "stock", sector: "Technology", country: "NL", base: 712 },
+  { symbol: "SAP", name: "SAP SE", class: "stock", sector: "Technology", country: "DE", base: 242 },
   /* --- ETF --- */
-  { symbol: "CW8.PA",  name: "Amundi MSCI World — ETF Monde",     class: "etf", sector: "Diversifié", country: "Monde",  base: 528 },
-  { symbol: "ESE.PA",  name: "BNP Paribas S&P 500 — ETF",           class: "etf", sector: "Diversifié", country: "US",     base: 29 },
-  { symbol: "SPY",     name: "SPDR S&P 500 ETF",            class: "etf", sector: "Diversifié", country: "US",     base: 612 },
-  { symbol: "QQQ",     name: "Invesco Nasdaq-100 ETF",      class: "etf", sector: "Technology", country: "US",     base: 528 },
-  { symbol: "PAEEM.PA",name: "Amundi Marchés Émergents (ETF)", class: "etf", sector: "Diversifié", country: "Émergents", base: 24 },
+  { symbol: "CW8.PA", name: "Amundi MSCI World — ETF Monde", class: "etf", sector: "Diversifié", country: "Monde", base: 528 },
+  { symbol: "ESE.PA", name: "BNP Paribas S&P 500 — ETF", class: "etf", sector: "Diversifié", country: "US", base: 29 },
+  { symbol: "SPY", name: "SPDR S&P 500 ETF", class: "etf", sector: "Diversifié", country: "US", base: 612 },
+  { symbol: "QQQ", name: "Invesco Nasdaq-100 ETF", class: "etf", sector: "Technology", country: "US", base: 528 },
+  { symbol: "PAEEM.PA", name: "Amundi Marchés Émergents (ETF)", class: "etf", sector: "Diversifié", country: "Émergents", base: 24 },
   /* --- Crypto-actifs --- */
-  { symbol: "BTC",  name: "Bitcoin",   class: "crypto", sector: "Crypto", country: "—", base: 97800, live: "BINANCE:BTCUSDT" },
-  { symbol: "ETH",  name: "Ethereum",  class: "crypto", sector: "Crypto", country: "—", base: 3420,  live: "BINANCE:ETHUSDT" },
-  { symbol: "SOL",  name: "Solana",    class: "crypto", sector: "Crypto", country: "—", base: 218,   live: "BINANCE:SOLUSDT" },
-  { symbol: "XRP",  name: "XRP",       class: "crypto", sector: "Crypto", country: "—", base: 2.4,   live: "BINANCE:XRPUSDT" },
-  { symbol: "ADA",  name: "Cardano",   class: "crypto", sector: "Crypto", country: "—", base: 0.92,  live: "BINANCE:ADAUSDT" },
-  { symbol: "DOGE", name: "Dogecoin",  class: "crypto", sector: "Crypto", country: "—", base: 0.31,  live: "BINANCE:DOGEUSDT" },
+  { symbol: "BTC", name: "Bitcoin", class: "crypto", sector: "Crypto", country: "—", base: 97800, live: "BINANCE:BTCUSDT" },
+  { symbol: "ETH", name: "Ethereum", class: "crypto", sector: "Crypto", country: "—", base: 3420, live: "BINANCE:ETHUSDT" },
+  { symbol: "SOL", name: "Solana", class: "crypto", sector: "Crypto", country: "—", base: 218, live: "BINANCE:SOLUSDT" },
+  { symbol: "XRP", name: "XRP", class: "crypto", sector: "Crypto", country: "—", base: 2.4, live: "BINANCE:XRPUSDT" },
+  { symbol: "ADA", name: "Cardano", class: "crypto", sector: "Crypto", country: "—", base: 0.92, live: "BINANCE:ADAUSDT" },
+  { symbol: "DOGE", name: "Dogecoin", class: "crypto", sector: "Crypto", country: "—", base: 0.31, live: "BINANCE:DOGEUSDT" },
   /* --- Obligations & taux (produits pédagogiques simulés, faible volatilité) --- */
-  { symbol: "OAT10",  name: "OAT France 10 ans (simulé)",       class: "bond", sector: "Obligations", country: "FR", base: 98.6,  vol: 0.001, yieldPct: 3.1 },
-  { symbol: "BUND10", name: "Bund Allemagne 10 ans (simulé)",   class: "bond", sector: "Obligations", country: "DE", base: 99.2,  vol: 0.001, yieldPct: 2.4 },
-  { symbol: "UST10",  name: "Bon du Trésor US 10 ans (simulé)", class: "bond", sector: "Obligations", country: "US", base: 97.8,  vol: 0.001, yieldPct: 4.3 },
+  { symbol: "OAT10", name: "OAT France 10 ans (simulé)", class: "bond", sector: "Obligations", country: "FR", base: 98.6, vol: 0.001, yieldPct: 3.1 },
+  { symbol: "BUND10", name: "Bund Allemagne 10 ans (simulé)", class: "bond", sector: "Obligations", country: "DE", base: 99.2, vol: 0.001, yieldPct: 2.4 },
+  { symbol: "UST10", name: "Bon du Trésor US 10 ans (simulé)", class: "bond", sector: "Obligations", country: "US", base: 97.8, vol: 0.001, yieldPct: 4.3 },
 ];
 const BY_SYMBOL = new Map(KNOWN_ASSETS.map(s => [s.symbol, s]));
 
@@ -166,6 +166,73 @@ function normalizeSector(raw) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Twelve Data (optionnel) — second fournisseur gratuit utilisé en repli    */
+/* pour les actions/ETF européens et asiatiques, hors couverture Finnhub    */
+/* gratuite (US uniquement). Voir https://twelvedata.com (clé gratuite,    */
+/* 8 req/min, 800/jour). Sans clé configurée, cette étape est simplement   */
+/* ignorée et le comportement existant (repli vers le cours simulé) reste  */
+/* inchangé.                                                                */
+/* ------------------------------------------------------------------ */
+const TWELVEDATA_KEY = process.env.TWELVEDATA_API_KEY || "";
+const TWELVEDATA_BASE = "https://api.twelvedata.com";
+// Twelve Data désambiguïse un ticker par place boursière via son paramètre
+// `exchange` plutôt que par un suffixe façon ".PA" — mapping best-effort à
+// partir du pays déjà connu dans KNOWN_ASSETS. Pas vérifié en conditions
+// réelles (voir AUDIT.md) : à confirmer/ajuster une fois testé avec une
+// vraie clé et un accès réseau vers api.twelvedata.com.
+const TWELVEDATA_EXCHANGE = { FR: "Euronext", DE: "XETRA", NL: "Euronext" };
+
+async function twelveDataQuote(symbol) {
+  if (!TWELVEDATA_KEY) return null;
+  const meta = BY_SYMBOL.get(symbol);
+  const base = symbol.includes(".") ? symbol.split(".")[0] : symbol;
+  const exchange = meta?.country && TWELVEDATA_EXCHANGE[meta.country];
+  // Deux essais : le symbole tel quel (peut fonctionner directement pour
+  // certaines places), puis ticker nu + place boursière explicite.
+  const attempts = [{ symbol }, ...(exchange ? [{ symbol: base, exchange }] : [])];
+
+  for (const attempt of attempts) {
+    try {
+      const url = new URL(`${TWELVEDATA_BASE}/quote`);
+      url.searchParams.set("symbol", attempt.symbol);
+      if (attempt.exchange) url.searchParams.set("exchange", attempt.exchange);
+      url.searchParams.set("apikey", TWELVEDATA_KEY);
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) continue;
+      const q = await res.json();
+      if (!q || q.status === "error" || q.close == null) continue;
+      return {
+        symbol, price: +q.close,
+        changePct: q.percent_change != null ? +(+q.percent_change).toFixed(2) : 0,
+        prevClose: q.previous_close != null ? +q.previous_close : +q.close,
+        simulated: false,
+      };
+    } catch { /* on tente le format suivant, ou on abandonne */ }
+  }
+  return null;
+}
+
+const TD_TYPE_TO_CLASS = { "Common Stock": "stock", "ETF": "etf", "Investment Trust": "etf" };
+async function twelveDataSearch(q) {
+  if (!TWELVEDATA_KEY) return [];
+  try {
+    const url = new URL(`${TWELVEDATA_BASE}/symbol_search`);
+    url.searchParams.set("symbol", q);
+    url.searchParams.set("apikey", TWELVEDATA_KEY);
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data?.data || []).slice(0, 10).map(x => ({
+      symbol: x.symbol,
+      description: x.instrument_name ? `${x.instrument_name}${x.exchange ? " · " + x.exchange : ""}` : x.symbol,
+      assetClass: TD_TYPE_TO_CLASS[x.instrument_type] || "stock",
+    }));
+  } catch {
+    return []; // recherche Finnhub/locale seules
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* API publique                                                        */
 /* ------------------------------------------------------------------ */
 export async function getQuote(symbol) {
@@ -183,9 +250,12 @@ export async function getQuote(symbol) {
     if (q && q.c) {
       data = { symbol, price: q.c, changePct: +(q.dp ?? 0).toFixed(2), prevClose: q.pc, simulated: false };
     }
-  } catch { /* on retombe sur le simulé */ }
-  // Fallback : le plan gratuit Finnhub ne couvre pas les actions EU, etc.
-  // Plutôt qu'une fiche vide → cours simulé déterministe, clairement marqué.
+  } catch { /* on tente le second fournisseur, puis le simulé */ }
+  // Deuxième fournisseur gratuit (Twelve Data) : comble les actions
+  // européennes/asiatiques hors couverture Finnhub gratuite (US uniquement).
+  if (!data) data = await twelveDataQuote(symbol);
+  // Fallback final : jamais de fiche vide → cours simulé déterministe,
+  // clairement marqué.
   if (!data) data = simulatedQuote(symbol);
 
   quoteCache.set(symbol, { at: Date.now(), data });
@@ -236,6 +306,12 @@ export async function getProfile(symbol) {
 
 const CLASS_LABEL = { stock: "Action", etf: "ETF", crypto: "Crypto", bond: "Obligation" };
 
+// Cache court (60 s) sur les requêtes de recherche : évite de retaper deux
+// fournisseurs à chaque frappe pour la même requête, précieux vu le quota
+// Twelve Data (8 req/min sur le plan gratuit).
+const searchCache = new Map();
+const SEARCH_TTL = 60_000;
+
 export async function searchSymbols(q) {
   const needle = q.toLowerCase();
   const localHits = KNOWN_ASSETS
@@ -244,20 +320,42 @@ export async function searchSymbols(q) {
 
   if (DEMO_MODE) return localHits.slice(0, 10);
 
-  let remote = [];
-  try {
-    const r = await finnhub("/search", { q });
-    remote = (r.result || [])
-      .filter(x => !x.type || x.type === "Common Stock" || x.type === "ETP")
-      .slice(0, 10)
-      .map(x => ({ symbol: x.symbol, description: x.description, assetClass: x.type === "ETP" ? "etf" : "stock" }));
-    remote.forEach(x => searchProfileHints.set(x.symbol, x.description));
-  } catch { /* recherche locale seule */ }
+  const cached = searchCache.get(needle);
+  let remote;
+  if (cached && Date.now() - cached.at < SEARCH_TTL) {
+    remote = cached.remote;
+  } else {
+    // Recherche live sur deux fournisseurs en parallèle : Finnhub (actions
+    // US/ETP) + Twelve Data (couverture mondiale, utile pour l'Europe/Asie).
+    // Ni l'un ni l'autre ne dépend de la liste figée — celle-ci ne sert plus
+    // qu'à compléter avec les classes qu'aucun des deux ne couvre bien en
+    // gratuit (crypto, obligations simulées).
+    const [finnhubResult, tdResult] = await Promise.allSettled([
+      finnhub("/search", { q }),
+      twelveDataSearch(q),
+    ]);
+    const finnhubHits = finnhubResult.status === "fulfilled"
+      ? (finnhubResult.value?.result || [])
+        .filter(x => !x.type || x.type === "Common Stock" || x.type === "ETP")
+        .slice(0, 10)
+        .map(x => ({ symbol: x.symbol, description: x.description, assetClass: x.type === "ETP" ? "etf" : "stock" }))
+      : [];
+    const tdHits = tdResult.status === "fulfilled" ? tdResult.value : [];
+    finnhubHits.forEach(x => searchProfileHints.set(x.symbol, x.description));
+    tdHits.forEach(x => searchProfileHints.set(x.symbol, x.description));
 
-  // fusion : univers connu (crypto/ETF/obligations incluses) en tête, dédupliqué
+    // Dédup entre les deux fournisseurs live, Finnhub en tête (données plus
+    // riches côté profil pour les actions US, majoritaires côté portefeuille).
+    const seenRemote = new Set();
+    remote = [...finnhubHits, ...tdHits].filter(x => (seenRemote.has(x.symbol) ? false : (seenRemote.add(x.symbol), true)));
+    searchCache.set(needle, { at: Date.now(), remote });
+  }
+
+  // Résultats live prioritaires ; la liste figée ne comble que ce qu'aucun
+  // des deux fournisseurs ne couvre (crypto majeures, obligations simulées).
   const seen = new Set();
   const merged = [];
-  for (const item of [...localHits, ...remote]) {
+  for (const item of [...remote, ...localHits]) {
     if (seen.has(item.symbol)) continue;
     seen.add(item.symbol);
     merged.push(item);

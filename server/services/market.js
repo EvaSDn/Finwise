@@ -226,6 +226,40 @@ async function twelveDataQuote(symbol) {
   return null;
 }
 
+/* ------------------------------------------------------------------ */
+/* Yahoo Finance (non officiel) — sans clé, sans quota documenté.       */
+/* Endpoint public utilisé par la librairie yfinance, hors des CGU      */
+/* officielles de Yahoo pour un usage automatisé (risque connu et       */
+/* largement accepté par la communauté pour ce type de projet). Accepte */
+/* directement le même format de symbole que le reste de l'app          */
+/* ("MC.PA", "AI.PA"…) — vérifié le 2026-07-16 en conditions réelles,   */
+/* aucun mapping suffixe/exchange nécessaire contrairement à Twelve     */
+/* Data. Placé après Finnhub et avant Twelve Data dans la cascade de     */
+/* repli : c'est la source la plus fiable pour l'Europe/l'Asie à date.  */
+/* ------------------------------------------------------------------ */
+const YAHOO_CHART_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
+
+async function yahooQuote(symbol) {
+  try {
+    const res = await fetch(`${YAHOO_CHART_BASE}/${encodeURIComponent(symbol)}`, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const meta = data?.chart?.result?.[0]?.meta;
+    if (!meta || meta.regularMarketPrice == null) return null;
+    const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? meta.regularMarketPrice;
+    return {
+      symbol, price: meta.regularMarketPrice,
+      changePct: prevClose ? +(((meta.regularMarketPrice - prevClose) / prevClose) * 100).toFixed(2) : 0,
+      prevClose, simulated: false,
+    };
+  } catch {
+    return null; // on retombe sur Twelve Data, puis le cours simulé
+  }
+}
+
 const TD_TYPE_TO_CLASS = { "Common Stock": "stock", "ETF": "etf", "Investment Trust": "etf" };
 async function twelveDataSearch(q) {
   if (!TWELVEDATA_KEY) return [];
@@ -270,9 +304,14 @@ export async function getQuote(symbol) {
     if (q && q.c) {
       data = { symbol, price: q.c, changePct: +(q.dp ?? 0).toFixed(2), prevClose: q.pc, simulated: false };
     }
-  } catch { /* on tente le second fournisseur, puis le simulé */ }
-  // Deuxième fournisseur gratuit (Twelve Data) : comble les actions
+  } catch { /* on tente les fournisseurs suivants, puis le simulé */ }
+  // Yahoo Finance (non officiel, sans clé) : comble les actions
   // européennes/asiatiques hors couverture Finnhub gratuite (US uniquement).
+  // Vérifié fonctionnel en conditions réelles le 2026-07-16.
+  if (!data) data = await yahooQuote(symbol);
+  // Twelve Data en dernier recours avant le simulé (utile si une clé payante
+  // est ajoutée un jour ; sur le plan gratuit, les actions EU y sont bloquées
+  // — voir AUDIT.md section 0.4).
   if (!data) data = await twelveDataQuote(symbol);
   // Fallback final : jamais de fiche vide → cours simulé déterministe,
   // clairement marqué.
@@ -326,9 +365,43 @@ export async function getProfile(symbol) {
 
 const CLASS_LABEL = { stock: "Action", etf: "ETF", crypto: "Crypto", bond: "Obligation" };
 
-// Cache court (60 s) sur les requêtes de recherche : évite de retaper deux
-// fournisseurs à chaque frappe pour la même requête, précieux vu le quota
-// Twelve Data (8 req/min sur le plan gratuit).
+// Yahoo Finance (recherche non officielle) : source principale de la
+// recherche live — un seul fournisseur, cohérent avec yahooQuote() (mêmes
+// symboles, pas de mapping exchange à deviner), résultats déjà triés par
+// pertinence. Vérifié en conditions réelles le 2026-07-16.
+const YAHOO_SEARCH_TYPE_TO_CLASS = { EQUITY: "stock", ETF: "etf", CRYPTOCURRENCY: "crypto" };
+async function yahooSearch(q) {
+  try {
+    const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=15&newsCount=0`;
+    const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" }, signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [];
+    const data = await res.json();
+    // Yahoo renvoie toutes les cotations croisées d'une même entreprise
+    // (Paris, OTC US, ADR Francfort…) triées par pertinence : on ne garde
+    // que la première (la plus pertinente) par entreprise, pour ne pas
+    // noyer l'utilisateur sous des doublons.
+    const seenCompany = new Set();
+    const out = [];
+    for (const x of data?.quotes || []) {
+      const assetClass = YAHOO_SEARCH_TYPE_TO_CLASS[x.quoteType];
+      if (!assetClass || !x.symbol) continue;
+      const companyKey = (x.longname || x.shortname || x.symbol).toLowerCase();
+      if (seenCompany.has(companyKey)) continue;
+      seenCompany.add(companyKey);
+      out.push({
+        symbol: x.symbol,
+        description: `${x.longname || x.shortname || x.symbol}${x.exchDisp ? " · " + x.exchDisp : ""}`,
+        assetClass,
+      });
+    }
+    return out.slice(0, 10);
+  } catch {
+    return []; // recherche Finnhub/Twelve Data/locale en repli
+  }
+}
+
+// Cache court (60 s) sur les requêtes de recherche : évite de retaper les
+// fournisseurs à chaque frappe pour la même requête.
 const searchCache = new Map();
 const SEARCH_TTL = 60_000;
 
@@ -345,34 +418,29 @@ export async function searchSymbols(q) {
   if (cached && Date.now() - cached.at < SEARCH_TTL) {
     remote = cached.remote;
   } else {
-    // Recherche live sur deux fournisseurs en parallèle : Finnhub (actions
-    // US/ETP) + Twelve Data (couverture mondiale, utile pour l'Europe/Asie).
-    // Ni l'un ni l'autre ne dépend de la liste figée — celle-ci ne sert plus
-    // qu'à compléter avec les classes qu'aucun des deux ne couvre bien en
-    // gratuit (crypto, obligations simulées).
-    const [finnhubResult, tdResult] = await Promise.allSettled([
-      finnhub("/search", { q }),
-      twelveDataSearch(q),
-    ]);
-    const finnhubHits = finnhubResult.status === "fulfilled"
-      ? (finnhubResult.value?.result || [])
-        .filter(x => !x.type || x.type === "Common Stock" || x.type === "ETP")
-        .slice(0, 10)
-        .map(x => ({ symbol: x.symbol, description: x.description, assetClass: x.type === "ETP" ? "etf" : "stock" }))
-      : [];
-    const tdHits = tdResult.status === "fulfilled" ? tdResult.value : [];
-    finnhubHits.forEach(x => searchProfileHints.set(x.symbol, x.description));
-    tdHits.forEach(x => searchProfileHints.set(x.symbol, x.description));
-
-    // Dédup entre les deux fournisseurs live, Finnhub en tête (données plus
-    // riches côté profil pour les actions US, majoritaires côté portefeuille).
-    const seenRemote = new Set();
-    remote = [...finnhubHits, ...tdHits].filter(x => (seenRemote.has(x.symbol) ? false : (seenRemote.add(x.symbol), true)));
+    remote = await yahooSearch(q);
+    if (!remote.length) {
+      // Yahoo indisponible ou aucun résultat : repli sur Finnhub + Twelve Data.
+      const [finnhubResult, tdResult] = await Promise.allSettled([
+        finnhub("/search", { q }),
+        twelveDataSearch(q),
+      ]);
+      const finnhubHits = finnhubResult.status === "fulfilled"
+        ? (finnhubResult.value?.result || [])
+          .filter(x => !x.type || x.type === "Common Stock" || x.type === "ETP")
+          .slice(0, 10)
+          .map(x => ({ symbol: x.symbol, description: x.description, assetClass: x.type === "ETP" ? "etf" : "stock" }))
+        : [];
+      const tdHits = tdResult.status === "fulfilled" ? tdResult.value : [];
+      const seenRemote = new Set();
+      remote = [...finnhubHits, ...tdHits].filter(x => (seenRemote.has(x.symbol) ? false : (seenRemote.add(x.symbol), true)));
+    }
+    remote.forEach(x => searchProfileHints.set(x.symbol, x.description));
     searchCache.set(needle, { at: Date.now(), remote });
   }
 
   // Résultats live prioritaires ; la liste figée ne comble que ce qu'aucun
-  // des deux fournisseurs ne couvre (crypto majeures, obligations simulées).
+  // fournisseur ne couvre bien en gratuit (crypto majeures, obligations simulées).
   const seen = new Set();
   const merged = [];
   for (const item of [...remote, ...localHits]) {

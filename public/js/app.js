@@ -20,6 +20,7 @@ const State = {
   trade: { symbol: null, side: "buy", qty: 1, amount: 100, inputMode: "qty", detail: null },
   newsCategory: "all",
   newsSymbolFilter: "all",
+  newsSearchQuery: "",
   newsCache: {},             // category -> { at, items }
   newsAutoTimer: null,
   chat: [],                 // { role:'user'|'assistant', content }
@@ -230,6 +231,123 @@ const NEWS_CATS = [
 ];
 const NEWS_CAT_LABEL = Object.fromEntries(NEWS_CATS.map(c => [c.id, c.label]));
 const NEWS_AUTOREFRESH_MS = 120_000; // near real-time, respects free API quota
+
+/* ============================================================ LANDING === */
+const LANDING_FEATURES = [
+  { icon: icon.budget, title: "Smart Budget", body: "Split your income into a clear plan and track every category in real time, visualized as a flowing Sankey diagram." },
+  { icon: icon.trade, title: "Virtual Trading", body: "Buy and sell stocks, ETFs, bonds and crypto with live market data — zero real money, zero real risk." },
+  { icon: icon.agent, title: "AI Advisor", body: "Chat with an AI agent that reviews your portfolio, explains market moves, and answers your investing questions." },
+  { icon: icon.shield, title: "Risk Profile", body: "Understand your risk exposure with a live gauge and personalized insights as your portfolio evolves." },
+];
+
+const LANDING_PRICING_ITEMS = [
+  "Full portfolio simulator, unlimited trades",
+  "Live market data & real-time news feed",
+  "AI-powered portfolio agent",
+  "Budget planner & risk analytics",
+  "No real money, no real risk — ever",
+];
+
+const LANDING_PRICING_PLANS = {
+  monthly: { price: "9.99", suffix: "/month", note: "" },
+  yearly: { price: "99.99", suffix: "/year", note: "Save 2 months vs. paying monthly" },
+};
+
+function renderLanding(pricingPeriod = "yearly") {
+  root().innerHTML = `
+  <div class="landing-page">
+    <header class="landing-header">
+      <div class="auth-brand" style="cursor:pointer;margin-bottom:0;" id="land-brand-btn">
+        <div class="brand-mark">F</div>
+        <div>
+          <div class="auth-brand-name">Finwise</div>
+          <div class="auth-brand-tag">Educational Simulator</div>
+        </div>
+      </div>
+      <nav class="landing-nav">
+        <a href="#land-features">Features</a>
+        <a href="#land-pricing">Pricing</a>
+      </nav>
+      <div class="landing-cta-group">
+        <button class="landing-btn-login" id="land-login-btn">Sign In</button>
+        <button class="landing-btn-signup" id="land-signup-btn">Get Started</button>
+      </div>
+    </header>
+
+    <section class="landing-hero">
+      <div class="landing-hero-badge">100% virtual · zero risk</div>
+      <h1>Learn to invest, <span>without risking a cent.</span></h1>
+      <p>Finwise is a full portfolio simulator with live market data, a budget planner and an AI advisor —
+        so you can build real investing skills before you put real money on the line.</p>
+      <div class="landing-hero-ctas">
+        <button class="btn-primary" id="land-hero-signup">Get Started — €99.99/year</button>
+        <button class="btn-ghost" id="land-hero-login">I already have an account</button>
+      </div>
+    </section>
+
+    <div class="landing-stats-bar">
+      <div class="landing-stats-container">
+        <div class="landing-stat-item"><h3>0 €</h3><p>Real money at risk</p></div>
+        <div class="landing-stat-item"><h3>Live</h3><p>Market data & news</p></div>
+        <div class="landing-stat-item"><h3>24/7</h3><p>AI portfolio agent</p></div>
+        <div class="landing-stat-item"><h3>15s</h3><p>Price refresh rate</p></div>
+      </div>
+    </div>
+
+    <section class="landing-features" id="land-features">
+      <h2 class="landing-section-title">Everything you need to learn</h2>
+      <p class="landing-section-sub">One platform to plan your budget, trade with confidence, and understand
+        the "why" behind every market move.</p>
+      <div class="landing-features-grid">
+        ${LANDING_FEATURES.map(f => `
+          <div class="landing-feature-card">
+            <div class="landing-feature-icon">${f.icon}</div>
+            <h3>${f.title}</h3>
+            <p>${f.body}</p>
+          </div>`).join("")}
+      </div>
+    </section>
+
+    <section class="landing-pricing" id="land-pricing">
+      <div class="landing-pricing-card">
+        <div class="landing-pricing-badge">Simple</div>
+        <h3>Premium Access</h3>
+        <div class="landing-pricing-toggle" id="land-pricing-toggle">
+          <button type="button" data-period="monthly" class="${pricingPeriod === "monthly" ? "active" : ""}">Monthly</button>
+          <button type="button" data-period="yearly" class="${pricingPeriod === "yearly" ? "active" : ""}">Yearly</button>
+        </div>
+        <div class="landing-price">€${LANDING_PRICING_PLANS[pricingPeriod].price}<span> ${LANDING_PRICING_PLANS[pricingPeriod].suffix}</span></div>
+        ${LANDING_PRICING_PLANS[pricingPeriod].note ? `<div class="landing-price-note">${esc(LANDING_PRICING_PLANS[pricingPeriod].note)}</div>` : `<div class="landing-price-note" style="visibility:hidden;">placeholder</div>`}
+        <div class="landing-pricing-benefit">🧠 Boost your financial IQ — deeper, personalized educational insights to help you become smarter with money.</div>
+        <div class="landing-pricing-list">
+          ${LANDING_PRICING_ITEMS.map(t => `<div class="landing-pricing-item">${icon.check}${esc(t)}</div>`).join("")}
+        </div>
+        <button class="btn-primary" id="land-pricing-signup">Get Started</button>
+      </div>
+    </section>
+
+    <footer class="landing-footer">
+      <div class="landing-footer-disclaimer">Finwise is an educational simulator. Portfolios, trades and
+        balances are entirely virtual — nothing here constitutes financial advice or a real brokerage account.</div>
+      <div>© ${new Date().getFullYear()} Finwise</div>
+    </footer>
+  </div>`;
+
+  const toRegister = () => renderAuth("register");
+  const toLogin = () => renderAuth("login");
+  $("#land-brand-btn").addEventListener("click", () => root().scrollTo?.(0, 0));
+  $("#land-login-btn").addEventListener("click", toLogin);
+  $("#land-signup-btn").addEventListener("click", toRegister);
+  $("#land-hero-signup").addEventListener("click", toRegister);
+  $("#land-hero-login").addEventListener("click", toLogin);
+  $("#land-pricing-signup").addEventListener("click", toRegister);
+  $("#land-pricing-toggle").querySelectorAll("[data-period]").forEach(b =>
+    b.addEventListener("click", () => {
+      const scrollY = window.scrollY;
+      renderLanding(b.dataset.period);
+      window.scrollTo(0, scrollY);
+    }));
+}
 
 /* ============================================================== AUTH ==== */
 function renderAuth(mode = "login") {
@@ -468,11 +586,30 @@ async function enterApp() {
   </div>`;
 
   $("#avatar-btn").addEventListener("click", () => navigate("account"));
-  $("#logout-btn").addEventListener("click", async () => {
-    await API.post("/api/auth/logout");
+  $("#logout-btn").addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
     stopPolling();
+    try {
+      await API.post("/api/auth/logout");
+    } catch (err) {
+      /* Even if the network call fails (expired session, offline, ...),
+         the user still expects to land back on the login screen instantly. */
+    }
     State.user = null;
-    renderAuth("login");
+    State.portfolio = null;
+    State.budget = null;
+    State.plan = null;
+    State.deposits = [];
+    State.newsCache = {};
+    State.newsCategory = "all";
+    State.newsSymbolFilter = "all";
+    State.newsSearchQuery = "";
+    State.chat = [];
+    State.insights = null;
+    State.view = "dashboard";
+    renderLanding();
+    root().scrollTo?.(0, 0);
   });
 
   try {
@@ -1168,6 +1305,7 @@ async function placeOrder() {
     const res = await API.post("/api/portfolio/order", { symbol: d.symbol, side, qty });
     await refreshPortfolio();
     State.newsCache = {}; // holdings changed → personalized feed needs refresh
+    State.insights = null; // holdings changed → risk/AI-agent analysis is stale, force recompute
     toast(`Order executed: ${fmtQty(res.qty ?? qty)} × ${fmtEur(res.executedPrice, 2)} — total ${fmtEur(res.total, 2)} ✓`, "success");
     renderTrading();
   } catch (e) {
@@ -1241,7 +1379,15 @@ async function loadNews({ force = false } = {}) {
     if (State.newsCategory === "portfolio" && State.newsSymbolFilter !== "all") {
       items = items.filter(n => (n.relatedSymbols || []).some(s => s.symbol === State.newsSymbolFilter));
     }
-    listEl.innerHTML = items.length ? items.map(newsCardHtml).join("") : newsEmptyMessage(State.newsCategory, held);
+    const q = State.newsSearchQuery.trim().toLowerCase();
+    if (q) {
+      items = items.filter(n =>
+        (n.headline || "").toLowerCase().includes(q) ||
+        (n.summary || "").toLowerCase().includes(q) ||
+        (n.relatedSymbols || []).some(s => s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)));
+    }
+    listEl.innerHTML = items.length ? items.map(newsCardHtml).join("")
+      : (q ? `<div class="empty-state">No news matching "${esc(State.newsSearchQuery.trim())}".</div>` : newsEmptyMessage(State.newsCategory, held));
 
     listEl.querySelectorAll("[data-news-id]").forEach(el =>
       el.addEventListener("click", () => openNewsModal(items.find(n => n.id === el.dataset.newsId))));
@@ -1268,8 +1414,12 @@ async function renderNews() {
       <div class="news-filters" id="news-cat-filters">
         ${cats.map(c => `<button class="filter-chip ${State.newsCategory === c.id ? "active" : ""}" data-cat="${c.id}">${esc(c.label)}</button>`).join("")}
       </div>
+      <div class="search-box news-search-box">
+        <input id="news-search" type="text" placeholder="Search news (e.g. Nvidia, AAPL)…" value="${esc(State.newsSearchQuery)}">
+      </div>
       <button class="btn-ghost news-refresh-btn" id="news-refresh" type="button">${icon.refresh}<span>Refresh</span></button>
     </div>
+    <div class="news-pipeline-note">Feed: live financial news via Finnhub · quotes fall back to Yahoo Finance for assets outside Finnhub's free-tier coverage.</div>
     <div class="news-filters" id="news-sym-filters" style="display:none;"></div>
     <div class="news-list" id="news-list"><div class="empty-state">Loading news...</div></div>
   </div>`;
@@ -1281,6 +1431,17 @@ async function renderNews() {
       renderNews();
     }));
   $("#news-refresh").addEventListener("click", () => loadNews({ force: true }));
+
+  /* --- search: 250ms debounce, filters the already-loaded feed client-side --- */
+  let newsSearchDebounce = null;
+  $("#news-search").addEventListener("input", (e) => {
+    clearTimeout(newsSearchDebounce);
+    const val = e.target.value;
+    newsSearchDebounce = setTimeout(() => {
+      State.newsSearchQuery = val;
+      loadNews();
+    }, 250);
+  });
 
   await loadNews();
   scheduleNewsAutoRefresh();
@@ -1577,7 +1738,15 @@ function projectorSvg(pts) {
   const line = key => pts.map((p, i) => (i === 0 ? "M" : "L") + x(i).toFixed(1) + "," + y(p[key]).toFixed(1)).join(" ");
   const area = key => line(key) + ` L${x(pts.length - 1)},${H - PADB} L${x(0)},${H - PADB} Z`;
   const labels = pts.filter((p, i) => i > 0 && (pts.length <= 11 || i % Math.ceil(pts.length / 8) === 0 || i === pts.length - 1))
-    .map(p => `<text x="${x(pts.indexOf(p))}" y="${H - 4}" text-anchor="middle" font-size="9.5" fill="#6b6d80">${p.y} yr${p.y > 1 ? "s" : ""}</text>`).join("");
+    .map(p => {
+      const i = pts.indexOf(p);
+      const isLast = i === pts.length - 1;
+      // The rightmost label sits at the edge of the viewBox; centering it ("middle")
+      // pushes half its width past x=W and the SVG clips it, cutting off the final
+      // character (e.g. "20yrs" rendering as "20yr"). Anchor it to "end" instead so
+      // it grows leftward from the point, staying fully inside the viewBox.
+      return `<text x="${x(i)}" y="${H - 4}" text-anchor="${isLast ? "end" : "middle"}" font-size="9.5" fill="#6b6d80">${p.y} yr${p.y > 1 ? "s" : ""}</text>`;
+    }).join("");
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;">
     <path d="${area("total")}" fill="#e3b567" opacity="0.18"/>
     <path d="${area("versed")}" fill="#6fb8b0" opacity="0.30"/>
@@ -1587,7 +1756,12 @@ function projectorSvg(pts) {
   </svg>`;
 }
 
-function renderRisk() {
+function riskPortfolioAlertHtml(top) {
+  if (!top) return "";
+  return `<div class="budget-alert" style="margin:0 0 20px;">${icon.warn}<div>Illustrated with <b>your</b> portfolio: your largest exposure is <b>${esc(SECTOR_EN[top.label] || top.label)}</b> at <b>${top.pct} %</b> (${fmtEur(top.value)}). A -20% correction in this allocation would cost you roughly <b>${fmtEur(top.value * 0.2)}</b>.</div></div>`;
+}
+
+async function renderRisk() {
   const a = State.insights;
   const top = a && a.sectorBreakdown && a.sectorBreakdown[0];
   const proj = { monthly: 150, rate: 5, years: 20 };
@@ -1595,7 +1769,7 @@ function renderRisk() {
   $("#view-root").innerHTML = `<div class="view">
     <div class="risk-intro"><p>Before investing a single real euro, understand what the numbers on your dashboard mean. Click each card for details, project your monthly contributions with the compound interest simulator, and consult the glossary below for terms you will see on stock listings (Yahoo Finance, Bloomberg…).</p></div>
 
-    ${top ? `<div class="budget-alert" style="margin:0 0 20px;">${icon.warn}<div>Illustrated with <b>your</b> portfolio: your largest exposure is <b>${esc(SECTOR_EN[top.label] || top.label)}</b> at <b>${top.pct} %</b> (${fmtEur(top.value)}). A -20% correction in this allocation would cost you roughly <b>${fmtEur(top.value * 0.2)}</b>.</div></div>` : ""}
+    <div id="risk-portfolio-alert">${riskPortfolioAlertHtml(top)}</div>
 
     <div class="section-label">Concepts to Know — click for details</div>
     <div class="concept-grid">
@@ -1611,7 +1785,7 @@ function renderRisk() {
     <div class="section-label">Compound Interest Projector — Monthly Contributions</div>
     <div class="card">
       <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px;">
-        A typical long-term investment scenario: a fixed amount deposited every month, compounding year after year. The <b style="color:var(--teal)">blue</b> area = total deposits made; the <b style="color:var(--accent)">gold</b> area = your total portfolio value. The gap between them represents compound interest earned.</p>
+        A typical long-term investment scenario: a fixed amount deposited every month, compounding year after year. The <b style="color:var(--teal)">blue</b> area = total deposits made; the <b style="color:var(--accent)">gold</b> area = your total portfolio value. The gap between them represents the total return generated.</p>
       <div class="field-row" style="grid-template-columns:1fr 1fr 1fr;">
         <div class="field"><label>Monthly deposit: <span id="pj-m-val" class="mono">${proj.monthly} €</span></label>
           <input id="pj-m" class="budget-slider" type="range" min="10" max="1000" step="10" value="${proj.monthly}"></div>
@@ -1623,10 +1797,10 @@ function renderRisk() {
       <div id="pj-chart"></div>
       <div class="budget-stat-row" style="border-bottom:none;margin-top:10px;padding-bottom:0;">
         <div><div class="tiny-label">Total Deposited</div><div class="mono budget-figure" style="color:var(--teal);" id="pj-versed">—</div></div>
-        <div><div class="tiny-label">Interest Earned</div><div class="mono budget-figure" style="color:var(--accent);" id="pj-interest">—</div></div>
+        <div><div class="tiny-label">Total Return</div><div class="mono budget-figure" style="color:var(--accent);" id="pj-interest">—</div></div>
         <div><div class="tiny-label">Final Capital</div><div class="mono budget-figure" id="pj-total">—</div></div>
       </div>
-      <div class="hint" style="margin-top:10px;color:var(--text-tertiary);font-size:11px;">Educational benchmarks: High-yield savings ~2-3%, government bonds ~3-4%, global equities ~6-8%/year historical average — without guarantee and subject to significant yearly fluctuations.</div>
+      <div class="hint" style="margin-top:10px;color:var(--text-tertiary);font-size:11px;">Educational benchmarks: High-yield savings ~2-3%, government bonds ~3-4%, global equities ~10%/year historical average — without guarantee and subject to significant yearly fluctuations.</div>
     </div>
 
     <div class="section-label">Stock Listings Glossary</div>
@@ -1668,6 +1842,18 @@ function renderRisk() {
   bindSlider("#pj-r", "rate", " %");
   bindSlider("#pj-y", "years", " years");
   redraw();
+
+  // Insights are only otherwise fetched from the AI Agent tab. If the user lands
+  // here first, or holdings just changed (State.insights was invalidated), fetch
+  // now and patch the alert in-place rather than showing a stale/empty box.
+  if (!State.insights) {
+    try {
+      State.insights = await API.get("/api/agent/insights");
+      const freshTop = State.insights.sectorBreakdown && State.insights.sectorBreakdown[0];
+      const host = $("#risk-portfolio-alert");
+      if (host && State.view === "risk") host.innerHTML = riskPortfolioAlertHtml(freshTop);
+    } catch (e) { /* non-blocking */ }
+  }
 }
 
 /* ============================================================== ACCOUNT == */
@@ -1843,6 +2029,6 @@ window.App = {
     if (!State.user.onboarded) renderOnboarding();
     else await enterApp();
   } catch (e) {
-    renderAuth("login");
+    renderLanding();
   }
 })();

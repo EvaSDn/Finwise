@@ -92,7 +92,7 @@ const server = app.listen(PORT, () => {
     : "✓ Live market data via Finnhub." + (process.env.TWELVEDATA_API_KEY ? " + Twelve Data (Europe/Asie)." : ""));
   const engine = process.env.ANTHROPIC_API_KEY ? "Anthropic (Claude)"
     : process.env.GEMINI_API_KEY ? "Google Gemini"
-    : null;
+      : null;
   console.log(engine
     ? `✓ AI Agent powered by ${engine}.`
     : "⚠ No ANTHROPIC_API_KEY / GEMINI_API_KEY — agent running in rules mode.");

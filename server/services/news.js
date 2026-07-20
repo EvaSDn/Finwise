@@ -93,6 +93,25 @@ function isoDay(offsetDays = 0) {
   return new Date(Date.now() + offsetDays * 86400_000).toISOString().slice(0, 10);
 }
 
+/** Some upstream feeds (Finnhub included) occasionally return summaries with
+ *  embedded markup (<p>, <ul>, <li>, entities...) meant for an HTML renderer
+ *  we don't use. Left untouched, the client's textContent-safe escaping just
+ *  turns it into visible literal tags. Strip it once, here, at the source. */
+function stripHtml(str) {
+  if (!str) return "";
+  return str
+    .replace(/<\/?(p|ul|ol|li|br|div|span|strong|em|b|i|a|h[1-6])\b[^>]*>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function normalize(raw, idPrefix, sourceTag) {
   const text = `${raw.headline || ""} ${raw.summary || ""}`;
   const related = relatedSymbolsFor(text);
@@ -101,9 +120,9 @@ function normalize(raw, idPrefix, sourceTag) {
     id: `${idPrefix}-${raw.id ?? raw.datetime ?? Math.random().toString(36).slice(2)}`,
     tags,
     category: tags[0] || sourceTag,
-    headline: raw.headline || "(no title)",
-    summary: raw.summary || "",
-    source: raw.source || "",
+    headline: stripHtml(raw.headline) || "(no title)",
+    summary: stripHtml(raw.summary),
+    source: raw.source || "Finnhub",
     url: raw.url || null,
     image: raw.image || null,
     datetime: (raw.datetime || Math.floor(Date.now() / 1000)) * 1000,

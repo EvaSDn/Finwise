@@ -31,14 +31,14 @@ const SECTOR_COLORS = {
   Technology: "#e3b567", Healthcare: "#6fb8b0", Finance: "#8f8fd9",
   Energy: "#7fb88f", Consumer: "#d98fb8", Industrials: "#c9a06a", Other: "#6b6d80",
 };
-const SECTOR_FR = {
-  Technology: "Technologie", Healthcare: "Santé", Finance: "Finance",
-  Energy: "Énergie", Consumer: "Consommation", Industrials: "Industrie",
-  Obligations: "Obligations", Crypto: "Crypto", "Diversifié": "Diversifié", Other: "Autre",
+const SECTOR_EN = {
+  Technology: "Technology", Healthcare: "Healthcare", Finance: "Finance",
+  Energy: "Energy", Consumer: "Consumer", Industrials: "Industrials",
+  Bonds: "Bonds", Crypto: "Crypto", "Diversified": "Diversified", Other: "Other",
 };
-const CLASS_FR = { stock: "Action", etf: "ETF", crypto: "Crypto", bond: "Obligation" };
+const CLASS_EN = { stock: "Stock", etf: "ETF", crypto: "Crypto", bond: "Bond" };
 const CLASS_COLORS = { stock: "#e3b567", etf: "#6fb8b0", crypto: "#8f8fd9", bond: "#7fb88f" };
-const classTag = cls => cls ? `<span class="tag" style="background:${(CLASS_COLORS[cls] || "#6b6d80")}22;color:${CLASS_COLORS[cls] || "#6b6d80"};">${CLASS_FR[cls] || cls}</span>` : "";
+const classTag = cls => cls ? `<span class="tag" style="background:${(CLASS_COLORS[cls] || "#6b6d80")}22;color:${CLASS_COLORS[cls] || "#6b6d80"};">${CLASS_EN[cls] || cls}</span>` : "";
 
 /* -------------------------------------------------------------- helpers -- */
 const $ = sel => document.querySelector(sel);
@@ -49,15 +49,15 @@ function esc(s) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 const fmtEur = (n, d = 0) =>
-  (n ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d }) + " €";
+  "€" + (n ?? 0).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 const fmtPct = n => (n >= 0 ? "+" : "") + (n ?? 0).toFixed(1) + " %";
-/* quantités fractionnaires : jusqu'à 6 décimales, zéros superflus retirés */
-const fmtQty = n => (+n).toLocaleString("fr-FR", { maximumFractionDigits: 6 });
+/* fractional quantities: up to 6 decimal places, trailing zeros removed */
+const fmtQty = n => (+n).toLocaleString("en-US", { maximumFractionDigits: 6 });
 function timeAgo(ts) {
   const s = Math.max(1, (Date.now() - ts) / 1000);
   if (s < 3600) return Math.round(s / 60) + " min";
-  if (s < 86400) return Math.round(s / 3600) + " h";
-  return Math.round(s / 86400) + " j";
+  if (s < 86400) return Math.round(s / 3600) + "h";
+  return Math.round(s / 86400) + "d";
 }
 
 let toastTimer = null;
@@ -69,9 +69,9 @@ function toast(msg, type = "") {
   toastTimer = setTimeout(() => (t.className = "toast"), 3200);
 }
 
-/* Modale de confirmation — retourne une Promise<boolean>. Avec checkLabel,
-   le bouton Confirmer reste désactivé tant que la case n'est pas cochée. */
-function confirmModal({ title, body, warning = "", checkLabel = "", confirmText = "Confirmer" }) {
+/* Confirmation modal — returns a Promise<boolean>. With checkLabel,
+   the Confirm button remains disabled until the checkbox is checked. */
+function confirmModal({ title, body, warning = "", checkLabel = "", confirmText = "Confirm" }) {
   return new Promise(resolve => {
     const bd = $("#modal-backdrop");
     $("#modal-title").textContent = title;
@@ -163,7 +163,7 @@ function sankeySvg(income, cats) {
     y += h + GAP;
     return node;
   });
-  const left = { x: cols[0], y: PAD, h: usable, color: "#8f8fd9", label: "Salaire", value: income };
+  const left = { x: cols[0], y: PAD, h: usable, color: "#8f8fd9", label: "Salary", value: income };
   const mid = { x: cols[1], y: PAD, h: usable, color: "#e3b567", label: "Budget", value: income };
 
   const ribbon = (x1, y1, h1, x2, y2, h2, color) => {
@@ -217,48 +217,49 @@ const icon = {
 
 /* --------------------------------------------------------- news config -- */
 const NEWS_CATS = [
-  { id: "all", label: "Tout" },
-  { id: "portfolio", label: "Mon portefeuille" },
-  { id: "marches", label: "Marchés" },
-  { id: "actions", label: "Actions" },
+  { id: "all", label: "All" },
+  { id: "portfolio", label: "My Portfolio" },
+  { id: "marches", label: "Markets" },
+  { id: "actions", label: "Stocks" },
   { id: "etf", label: "ETF" },
-  { id: "obligations", label: "Obligations" },
-  { id: "matieres-premieres", label: "Mat. premières" },
-  { id: "devises", label: "Devises" },
+  { id: "obligations", label: "Bonds" },
+  { id: "matieres-premieres", label: "Commodities" },
+  { id: "devises", label: "Currencies" },
   { id: "crypto", label: "Crypto" },
-  { id: "entreprises", label: "Entreprises" },
+  { id: "entreprises", label: "Companies" },
 ];
 const NEWS_CAT_LABEL = Object.fromEntries(NEWS_CATS.map(c => [c.id, c.label]));
-const NEWS_AUTOREFRESH_MS = 120_000; // quasi temps réel, respecte le quota gratuit de l'API
+const NEWS_AUTOREFRESH_MS = 120_000; // near real-time, respects free API quota
 
 /* ============================================================== AUTH ==== */
 function renderAuth(mode = "login") {
   root().innerHTML = `
   <div class="auth-screen">
     <div class="auth-card">
-      <div class="auth-brand">
+      <div class="auth-brand" style="cursor:pointer;" id="auth-brand-btn">
         <div class="brand-mark">F</div>
         <div>
           <div class="auth-brand-name">Finwise</div>
-          <div class="auth-brand-tag">Simulateur pédagogique</div>
+          <div class="auth-brand-tag">Educational Simulator</div>
         </div>
       </div>
-      <div class="auth-title">${mode === "login" ? "Connexion" : "Créer un compte"}</div>
-      <div class="auth-sub">Portefeuille 100 % virtuel : apprenez à investir sans risquer un centime.</div>
+      <div class="auth-title">${mode === "login" ? "Sign In" : "Create an Account"}</div>
+      <div class="auth-sub">100% virtual portfolio: learn to invest without risking a single penny.</div>
       <div class="form-error" id="auth-error"></div>
       ${mode === "register" ? `
-      <div class="field"><label>Prénom</label><input id="f-name" type="text" autocomplete="name" placeholder="Clara"></div>` : ""}
-      <div class="field"><label>E-mail</label><input id="f-email" type="email" autocomplete="email" placeholder="vous@exemple.fr"></div>
-      <div class="field"><label>Mot de passe</label><input id="f-pass" type="password" autocomplete="${mode === "login" ? "current-password" : "new-password"}">
-        ${mode === "register" ? `<div class="hint">8 caractères minimum.</div>` : ""}</div>
-      <button class="btn-primary" id="auth-submit">${mode === "login" ? "Se connecter" : "Créer mon compte"}</button>
+      <div class="field"><label>First Name</label><input id="f-name" type="text" autocomplete="name" placeholder="Sarah"></div>` : ""}
+      <div class="field"><label>Email</label><input id="f-email" type="email" autocomplete="email" placeholder="you@example.com"></div>
+      <div class="field"><label>Password</label><input id="f-pass" type="password" autocomplete="${mode === "login" ? "current-password" : "new-password"}">
+        ${mode === "register" ? `<div class="hint">8 characters minimum.</div>` : ""}</div>
+      <button class="btn-primary" id="auth-submit">${mode === "login" ? "Sign In" : "Create Account"}</button>
       <div class="auth-switch">
-        ${mode === "login" ? "Pas encore de compte ?" : "Déjà inscrit ?"}
-        <button id="auth-switch-btn">${mode === "login" ? "S'inscrire" : "Se connecter"}</button>
+        ${mode === "login" ? "Don't have an account?" : "Already registered?"}
+        <button id="auth-switch-btn">${mode === "login" ? "Sign Up" : "Sign In"}</button>
       </div>
     </div>
   </div>`;
 
+  $("#auth-brand-btn").addEventListener("click", () => renderLanding());
   $("#auth-switch-btn").addEventListener("click", () => renderAuth(mode === "login" ? "register" : "login"));
   const submit = async () => {
     const errEl = $("#auth-error");
@@ -279,13 +280,13 @@ function renderAuth(mode = "login") {
       else await enterApp();
     } catch (e) {
       const map = {
-        INVALID_CREDENTIALS: "E-mail ou mot de passe incorrect.",
-        EMAIL_TAKEN: "Cet e-mail est déjà utilisé.",
-        PASSWORD_TOO_SHORT: "Le mot de passe doit contenir au moins 8 caractères.",
-        INVALID_EMAIL: "Adresse e-mail invalide.",
-        INVALID_NAME: "Prénom invalide.",
+        INVALID_CREDENTIALS: "Incorrect email or password.",
+        EMAIL_TAKEN: "This email is already in use.",
+        PASSWORD_TOO_SHORT: "Password must be at least 8 characters.",
+        INVALID_EMAIL: "Invalid email address.",
+        INVALID_NAME: "Invalid first name.",
       };
-      errEl.textContent = map[e.code] || "Une erreur est survenue. Réessayez.";
+      errEl.textContent = map[e.code] || "An error occurred. Please try again.";
       errEl.classList.add("visible");
     } finally { btn.disabled = false; }
   };
@@ -309,8 +310,8 @@ function renderOnboarding() {
       <div class="auth-card wide">
         <div class="auth-brand">
           <div class="brand-mark">F</div>
-          <div><div class="auth-brand-name">Bienvenue, ${esc(State.user.name)}</div>
-          <div class="auth-brand-tag">Configuration du budget</div></div>
+          <div><div class="auth-brand-name">Welcome, ${esc(State.user.name)}</div>
+          <div class="auth-brand-tag">Budget Setup</div></div>
         </div>
         <div class="onboard-steps">
           <div class="onboard-step done"></div>
@@ -318,43 +319,43 @@ function renderOnboarding() {
         </div>
         <div class="form-error" id="ob-error"></div>
         ${step === 1 ? `
-        <div class="auth-title">Votre budget mensuel</div>
-        <div class="auth-sub">Comme sur Finary : on part de votre salaire, on soustrait vos dépenses fixes, et on voit ce qui peut aller vers l'investissement.</div>
-        <div class="field"><label>Salaire net mensuel (€)</label><input id="ob-income" type="number" min="0" value="${data.monthlyIncome}"></div>
+        <div class="auth-title">Your Monthly Budget</div>
+        <div class="auth-sub">Just like Finary: we start with your income, subtract your fixed expenses, and see what you can put toward investing.</div>
+        <div class="field"><label>Net Monthly Salary (€)</label><input id="ob-income" type="number" min="0" value="${data.monthlyIncome}"></div>
         <div class="field-row">
-          <div class="field"><label>Logement (loyer + charges)</label><input id="ob-housing" type="number" min="0" value="${data.housing}"></div>
-          <div class="field"><label>Vie quotidienne</label><input id="ob-daily" type="number" min="0" value="${data.dailyLife}"></div>
+          <div class="field"><label>Housing (Rent + Utilities)</label><input id="ob-housing" type="number" min="0" value="${data.housing}"></div>
+          <div class="field"><label>Daily Life</label><input id="ob-daily" type="number" min="0" value="${data.dailyLife}"></div>
         </div>
-        <div class="field"><label>Abonnements</label><input id="ob-subs" type="number" min="0" value="${data.subscriptions}"></div>
-        <button class="btn-primary" id="ob-next">Continuer</button>
+        <div class="field"><label>Subscriptions</label><input id="ob-subs" type="number" min="0" value="${data.subscriptions}"></div>
+        <button class="btn-primary" id="ob-next">Continue</button>
         ` : `
-        <div class="auth-title">Combien investir chaque mois ?</div>
-        <div class="auth-sub">C'est vous qui décidez du pourcentage. Au-delà de <b>10 %</b> de vos revenus, nous vous demanderons une confirmation explicite — simple prudence, pas une interdiction.</div>
+        <div class="auth-title">How much to invest each month?</div>
+        <div class="auth-sub">You decide the percentage. Above <b>10%</b> of your income, we will ask for an explicit confirmation — simple prudence, not a restriction.</div>
         <div class="field">
-          <label>Part du salaire à investir</label>
+          <label>Share of salary to invest</label>
           <input id="ob-pct" class="budget-slider" type="range" min="0" max="40" step="1" value="${data.investPct}">
           <div class="budget-slider-readout">
             <span class="mono" style="font-size:22px;" id="ob-pct-val">${data.investPct} %</span>
-            <span style="color:var(--text-tertiary); font-size:12px;" id="ob-pct-eur">≈ ${fmtEur(monthly)} / mois</span>
+            <span style="color:var(--text-tertiary); font-size:12px;" id="ob-pct-eur">≈ ${fmtEur(monthly)} / month</span>
           </div>
           <div class="budget-alert" id="ob-alert" style="display:${data.investPct > 10 ? "flex" : "none"};">
-            ${icon.warn}<div>Vous dépassez le seuil de prudence de <b>10 %</b> de vos revenus. C'est votre choix — une confirmation vous sera demandée.</div>
+            ${icon.warn}<div>You are exceeding the caution threshold of <b>10%</b> of your income. It is your choice — a confirmation will be requested.</div>
           </div>
         </div>
         <div class="field">
-          <label>Mode de versement</label>
+          <label>Contribution Mode</label>
           <div class="mode-toggle">
-            <button type="button" data-mode="dca" class="${data.dcaMode === "dca" ? "active" : ""}">DCA — tous les mois</button>
-            <button type="button" data-mode="once" class="${data.dcaMode === "once" ? "active" : ""}">Versement unique</button>
+            <button type="button" data-mode="dca" class="${data.dcaMode === "dca" ? "active" : ""}">DCA — Monthly</button>
+            <button type="button" data-mode="once" class="${data.dcaMode === "once" ? "active" : ""}">One-time Deposit</button>
           </div>
-          <div class="hint">DCA (Dollar-Cost Averaging) : investir la même somme à intervalle régulier pour lisser le prix d'entrée.</div>
+          <div class="hint">DCA (Dollar-Cost Averaging): invest the same amount at regular intervals to average the purchase price.</div>
         </div>
         <label class="confirm-check">
           <input type="checkbox" id="ob-firstnow" ${data.firstDepositNow ? "checked" : ""}>
-          <span>Effectuer le premier versement maintenant (${fmtEur(monthly)}) pour pouvoir passer mes premiers ordres virtuels.</span>
+          <span>Make the first deposit now (${fmtEur(monthly)}) to be able to place your first virtual orders.</span>
         </label>
-        <button class="btn-primary" id="ob-finish">Terminer la configuration</button>
-        <button class="btn-ghost" id="ob-back">Retour</button>
+        <button class="btn-primary" id="ob-finish">Complete Setup</button>
+        <button class="btn-ghost" id="ob-back">Back</button>
         `}
       </div>
     </div>`;
@@ -369,18 +370,18 @@ function renderOnboarding() {
         data.dailyLife = +$("#ob-daily").value || 0;
         data.subscriptions = +$("#ob-subs").value || 0;
         const err = $("#ob-error");
-        if (data.monthlyIncome <= 0) { err.textContent = "Indiquez un salaire mensuel valide."; err.classList.add("visible"); return; }
+        if (data.monthlyIncome <= 0) { err.textContent = "Please enter a valid monthly salary."; err.classList.add("visible"); return; }
         if (data.housing + data.dailyLife + data.subscriptions > data.monthlyIncome) {
-          err.textContent = "Vos dépenses fixes dépassent votre salaire — vérifiez les montants."; err.classList.add("visible"); return;
+          err.textContent = "Your fixed expenses exceed your salary — please check the amounts."; err.classList.add("visible"); return;
         }
         step = 2; draw();
       });
     } else {
       const slider = $("#ob-pct");
-      slider.addEventListener("input", () => {          // mise à jour EN PLACE
+      slider.addEventListener("input", () => {
         data.investPct = +slider.value;
         $("#ob-pct-val").textContent = data.investPct + " %";
-        $("#ob-pct-eur").textContent = "≈ " + fmtEur(data.monthlyIncome * data.investPct / 100) + " / mois";
+        $("#ob-pct-eur").textContent = "≈ " + fmtEur(data.monthlyIncome * data.investPct / 100) + " / month";
         $("#ob-alert").style.display = data.investPct > 10 ? "flex" : "none";
       });
       root().querySelectorAll("[data-mode]").forEach(b =>
@@ -397,24 +398,24 @@ function renderOnboarding() {
       const res = await API.post("/api/auth/onboarding", { ...data, confirmedOverThreshold: confirmed });
       if (res.confirmationRequired) {
         const ok = await confirmModal({
-          title: "Au-delà du seuil de prudence",
-          body: `Vous avez choisi d'investir <b>${data.investPct} %</b> de vos revenus mensuels, soit <b>${fmtEur(data.monthlyIncome * data.investPct / 100)}</b> par mois.`,
-          warning: `Le seuil de prudence est fixé à <b>10 %</b>. Investir davantage réduit votre marge de sécurité en cas d'imprévu. La décision vous appartient.`,
-          checkLabel: "Je comprends le risque et je confirme ce pourcentage.",
-          confirmText: "Confirmer " + data.investPct + " %",
+          title: "Above Caution Threshold",
+          body: `You have chosen to invest <b>${data.investPct} %</b> of your monthly income, which is <b>${fmtEur(data.monthlyIncome * data.investPct / 100)}</b> per month.`,
+          warning: `The caution threshold is set at <b>10 %</b>. Investing more reduces your safety margin in case of unforeseen events. The decision is yours.`,
+          checkLabel: "I understand the risk and confirm this percentage.",
+          confirmText: "Confirm " + data.investPct + " %",
         });
         if (ok) return submitOnboarding(true);
         return;
       }
       State.user = res.user;
       State.budget = res.budget;
-      toast("Budget configuré ✓", "success");
+      toast("Budget configured ✓", "success");
       await enterApp();
     } catch (e) {
       const err = $("#ob-error");
       err.textContent = e.code === "COSTS_EXCEED_INCOME"
-        ? "Vos dépenses fixes dépassent votre salaire."
-        : "Erreur lors de l'enregistrement. Réessayez.";
+        ? "Your fixed expenses exceed your salary."
+        : "Error saving. Please try again.";
       err.classList.add("visible");
     }
   };
@@ -424,14 +425,14 @@ function renderOnboarding() {
 
 /* ============================================================ APP SHELL = */
 const VIEWS = [
-  { id: "dashboard", label: "Dashboard", eyebrow: "Vue d'ensemble", title: "Dashboard", subtitle: "Votre patrimoine simulé — secteur par secteur, pays par pays.", icon: icon.home },
-  { id: "budget", label: "Budget", eyebrow: "Revenus & versements", title: "Budget", subtitle: "D'où vient l'argent, où il va — et ce que vous investissez.", icon: icon.budget },
-  { id: "trading", label: "Investir", eyebrow: "Passer un ordre", title: "Trading", subtitle: "Achetez et vendez sur des cours réels, sans risquer un centime.", icon: icon.trade },
-  { id: "news", label: "Actualités", eyebrow: "Flux filtré", title: "Actualités", subtitle: "Uniquement les nouvelles qui concernent vos positions.", icon: icon.news },
-  { id: "agent", label: "Agent IA", eyebrow: "Assistant", title: "Agent IA", subtitle: "Votre copilote qui traduit le risque en euros.", icon: icon.agent },
-  { id: "risk", label: "Risques", eyebrow: "Avant d'investir", title: "Comprendre les risques", subtitle: "Les concepts clés, illustrés avec votre propre portefeuille.", icon: icon.shield },
-  { id: "account", label: "Mon compte", eyebrow: "Paramètres", title: "Mon compte", subtitle: "Profil, mot de passe et données personnelles.", icon: icon.user },
-  { id: "admin", label: "Admin", eyebrow: "Administration", title: "Gestion des utilisateurs", subtitle: "Comptes, activité et suppression — réservé aux administrateurs.", icon: icon.admin, adminOnly: true },
+  { id: "dashboard", label: "Dashboard", eyebrow: "Overview", title: "Dashboard", subtitle: "Your simulated wealth — sector by sector, country by country.", icon: icon.home },
+  { id: "budget", label: "Budget", eyebrow: "Income & deposits", title: "Budget", subtitle: "Where the money comes from, where it goes — and what you invest.", icon: icon.budget },
+  { id: "trading", label: "Invest", eyebrow: "Place an order", title: "Trading", subtitle: "Buy and sell on real prices without risking a single penny.", icon: icon.trade },
+  { id: "news", label: "News", eyebrow: "Filtered feed", title: "News Feed", subtitle: "Only financial news concerning your positions and markets.", icon: icon.news },
+  { id: "agent", label: "AI Agent", eyebrow: "Assistant", title: "AI Agent", subtitle: "Your co-pilot who translates risk into concrete euros.", icon: icon.agent },
+  { id: "risk", label: "Risks", eyebrow: "Before investing", title: "Understand Risks", subtitle: "Key concepts illustrated with your own portfolio.", icon: icon.shield },
+  { id: "account", label: "My Account", eyebrow: "Settings", title: "My Account", subtitle: "Profile, password and personal data.", icon: icon.user },
+  { id: "admin", label: "Admin", eyebrow: "Administration", title: "User Management", subtitle: "Accounts, activity, and deletion — reserved for administrators.", icon: icon.admin, adminOnly: true },
 ];
 const visibleViews = () => VIEWS.filter(v => !v.adminOnly || (State.user && State.user.role === "admin"));
 
@@ -439,14 +440,14 @@ async function enterApp() {
   root().innerHTML = `
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="brand">
+      <div class="brand" style="cursor:pointer;" id="sidebar-brand-btn">
         <div class="brand-mark" style="width:30px;height:30px;border-radius:9px;font-size:16px;">F</div>
-        <div><div class="brand-name">Finwise</div><div class="brand-tag">Simulateur</div></div>
+        <div><div class="brand-name">Finwise</div><div class="brand-tag">Simulator</div></div>
       </div>
       <nav class="nav" id="nav"></nav>
       <div class="sidebar-footer">
-        <div class="disclaimer-pill"><b>Outil pédagogique.</b> Portefeuille virtuel — rien ici ne constitue un conseil en investissement réel.</div>
-        <button class="logout-btn" id="logout-btn">Se déconnecter</button>
+        <div class="disclaimer-pill"><b>Educational tool.</b> Virtual portfolio — nothing here constitutes real investment advice.</div>
+        <button class="logout-btn" id="logout-btn">Log Out</button>
       </div>
     </aside>
     <main class="main">
@@ -457,9 +458,9 @@ async function enterApp() {
           <div class="page-subtitle" id="page-subtitle"></div>
         </div>
         <div class="topbar-right">
-          <span class="demo-chip" id="demo-chip" style="display:none;">Données simulées</span>
-          <div class="cash-chip">Liquidités · <b id="cash-chip-value">—</b></div>
-          <div class="avatar" id="avatar-btn" style="cursor:pointer;" title="Mon compte">${esc((State.user.name || "?").slice(0, 2).toUpperCase())}</div>
+          <span class="demo-chip" id="demo-chip" style="display:none;">Simulated Data</span>
+          <div class="cash-chip">Cash · <b id="cash-chip-value">—</b></div>
+          <div class="avatar" id="avatar-btn" style="cursor:pointer;" title="My account">${esc((State.user.name || "?").slice(0, 2).toUpperCase())}</div>
         </div>
       </div>
       <div id="view-root"></div>
@@ -585,7 +586,7 @@ function computeBreakdown(by) {
   }
   return Object.entries(acc).map(([key, value]) => ({
     key,
-    label: by === "sector" ? (SECTOR_FR[key] || key) : key,
+    label: by === "sector" ? (SECTOR_EN[key] || key) : key,
     color: by === "sector" ? (SECTOR_COLORS[key] || "#6b6d80") : "#6fb8b0",
     value,
     pct: pf.invested > 0 ? (value / pf.invested) * 100 : 0,
@@ -602,14 +603,14 @@ function renderDashboard() {
     $("#view-root").innerHTML = `<div class="view">
       <div class="hero-row">
         <div class="hero-value-card">
-          <div class="hero-label">Valeur totale du portefeuille</div>
-          <div class="hero-number"><span data-live-total>${fmtEur(pf.total)}</span> <small>virtuel</small></div>
-          <div class="hero-sub">Total versé : ${fmtEur(deposited)} · liquidités disponibles : ${fmtEur(pf.cash, 2)}</div>
+          <div class="hero-label">Total Portfolio Value</div>
+          <div class="hero-number"><span data-live-total>${fmtEur(pf.total)}</span> <small>virtual</small></div>
+          <div class="hero-sub">Total Deposited: ${fmtEur(deposited)} · Available Cash: ${fmtEur(pf.cash, 2)}</div>
         </div>
         <div class="empty-state" style="display:flex;flex-direction:column;justify-content:center;gap:14px;">
-          <div><b>Aucune position pour l'instant.</b><br>
-          Alimentez votre compte dans <b>Budget</b>, puis passez votre premier ordre.</div>
-          <button class="btn-primary" id="dash-go-invest" style="max-width:260px;margin:0 auto;">+ Ajouter une position</button>
+          <div><b>No positions yet.</b><br>
+          Fund your account in <b>Budget</b>, then place your first order.</div>
+          <button class="btn-primary" id="dash-go-invest" style="max-width:260px;margin:0 auto;">+ Add a position</button>
         </div>
       </div></div>`;
     const goBtn = $("#dash-go-invest");
@@ -626,19 +627,19 @@ function renderDashboard() {
   $("#view-root").innerHTML = `<div class="view">
     <div class="hero-row">
       <div class="hero-value-card">
-        <div class="hero-label">Valeur totale du portefeuille</div>
-        <div class="hero-number"><span data-live-total>${fmtEur(pf.total)}</span> <small>virtuel</small></div>
+        <div class="hero-label">Total Portfolio Value</div>
+        <div class="hero-number"><span data-live-total>${fmtEur(pf.total)}</span> <small>virtual</small></div>
         <div class="hero-delta">
           <span class="tag ${delta >= 0 ? "positive" : "negative"}">${fmtPct(deltaPct)}</span>
-          <span class="mono" style="color:var(--text-secondary)">${delta >= 0 ? "+" : ""}${fmtEur(delta)} vs total versé</span>
+          <span class="mono" style="color:var(--text-secondary)">${delta >= 0 ? "+" : ""}${fmtEur(delta)} vs total deposited</span>
         </div>
-        <div class="hero-sub"><span class="live-dot"></span>Cours actualisés toutes les 15 s · Total versé : ${fmtEur(deposited)}</div>
+        <div class="hero-sub"><span class="live-dot"></span>Prices updated every 15s · Total deposited: ${fmtEur(deposited)}</div>
       </div>
       <div class="card gauge-card" style="min-height:auto;">
-        <div class="card-title">Investi vs liquidités</div>
+        <div class="card-title">Invested vs Cash</div>
         <div class="budget-stat-row">
-          <div><div class="tiny-label">Investi</div><div class="mono budget-figure" data-live-invested>${fmtEur(pf.invested)}</div></div>
-          <div><div class="tiny-label">Liquidités</div><div class="mono budget-figure">${fmtEur(pf.cash, 2)}</div></div>
+          <div><div class="tiny-label">Invested</div><div class="mono budget-figure" data-live-invested>${fmtEur(pf.invested)}</div></div>
+          <div><div class="tiny-label">Cash</div><div class="mono budget-figure">${fmtEur(pf.cash, 2)}</div></div>
           <div><div class="tiny-label">Positions</div><div class="mono budget-figure">${pf.positions.length}</div></div>
         </div>
         <div style="flex:1; min-height:120px;">${sparklineSvg(spark, { w: 500, h: 130, stroke: delta >= 0 ? "#7fb88f" : "#e0645a", fill: true, cls: "chart-svg" })}</div>
@@ -647,7 +648,7 @@ function renderDashboard() {
 
     <div class="risk-gauge-row">
       <div class="card gauge-card">
-        <div class="card-title">${State.breakdownView === "country" ? "Exposition géographique" : "Exposition sectorielle"}</div>
+        <div class="card-title">${State.breakdownView === "country" ? "Geographical Exposure" : "Sector Exposure"}</div>
         <div class="gauge-body">
           <div class="gauge-half">
             ${riskGaugeSvg(top.pct)}
@@ -658,21 +659,21 @@ function renderDashboard() {
           </div>
           ${overexposed ? `
           <div class="warning-half alert">
-            <div class="warning-head">${icon.warn}<span class="warning-title">Concentration élevée</span></div>
+            <div class="warning-head">${icon.warn}<span class="warning-title">High Concentration</span></div>
             <div class="warning-figure">−${fmtEur(riskEuros)}</div>
-            <div class="warning-text">Perte estimée si cette exposition corrige de <b>20 %</b> — voilà ce qu'un pourcentage veut dire en euros.</div>
+            <div class="warning-text">Estimated loss if this exposure corrects by <b>20%</b> — this is what a percentage means in real euros.</div>
           </div>` : `
           <div class="warning-half ok">
-            <div class="warning-head">${icon.check}<span class="warning-title">Allocation équilibrée</span></div>
-            <div class="warning-text">Aucune alerte de concentration pour le moment. Gardez un œil sur cette jauge au fil de vos ordres.</div>
+            <div class="warning-head">${icon.check}<span class="warning-title">Balanced Allocation</span></div>
+            <div class="warning-text">No concentration alerts at the moment. Keep an eye on this gauge as you trade.</div>
           </div>`}
         </div>
       </div>
       <div class="card">
-        <div class="card-title">Répartition ${State.breakdownView === "country" ? "par pays" : "par secteur"}
+        <div class="card-title">Breakdown ${State.breakdownView === "country" ? "by country" : "by sector"}
           <div class="segmented">
-            <button data-bd="sector" class="${State.breakdownView === "sector" ? "active" : ""}">Secteur</button>
-            <button data-bd="country" class="${State.breakdownView === "country" ? "active" : ""}">Pays</button>
+            <button data-bd="sector" class="${State.breakdownView === "sector" ? "active" : ""}">Sector</button>
+            <button data-bd="country" class="${State.breakdownView === "country" ? "active" : ""}">Country</button>
           </div>
         </div>
         <div class="sector-list">
@@ -690,19 +691,19 @@ function renderDashboard() {
 
     <div class="card">
       <div class="card-title">Positions
-        <button class="filter-chip" id="dash-add-pos">+ Ajouter une position</button>
+        <button class="filter-chip" id="dash-add-pos">+ Add position</button>
       </div>
       <table class="holdings-table">
-        <thead><tr><th>Actif</th><th>Secteur</th><th>Pays</th><th>Cours</th><th>Var.</th><th>Tendance</th><th>Valeur</th><th>+/- value</th></tr></thead>
+        <thead><tr><th>Asset</th><th>Sector</th><th>Country</th><th>Price</th><th>Chg.</th><th>Trend</th><th>Value</th><th>P&L</th></tr></thead>
         <tbody>
           ${pf.positions.map(h => `
           <tr>
             <td><div class="stock-cell">
               <div class="stock-logo">${esc(h.symbol.slice(0, 2))}</div>
               <div><div class="stock-name">${esc(h.name || h.symbol)}</div>
-              <div class="stock-ticker">${esc(h.symbol)} · ${fmtQty(h.shares)} titre(s)</div></div>
+              <div class="stock-ticker">${esc(h.symbol)} · ${fmtQty(h.shares)} share(s)</div></div>
             </div></td>
-            <td><span class="tag" style="background:${(SECTOR_COLORS[h.sector] || "#6b6d80")}22;color:${SECTOR_COLORS[h.sector] || "#6b6d80"};">${esc(SECTOR_FR[h.sector] || h.sector || "—")}</span></td>
+            <td><span class="tag" style="background:${(SECTOR_COLORS[h.sector] || "#6b6d80")}22;color:${SECTOR_COLORS[h.sector] || "#6b6d80"};">${esc(SECTOR_EN[h.sector] || h.sector || "—")}</span></td>
             <td style="font-size:12.5px;color:var(--text-secondary);">${esc(h.country || "—")}</td>
             <td class="mono" data-live="price:${esc(h.symbol)}">${fmtEur(h.price, 2)}</td>
             <td><span class="tag ${h.changePct >= 0 ? "positive" : "negative"}" data-live="chg:${esc(h.symbol)}">${fmtPct(h.changePct)}</span></td>
@@ -725,79 +726,79 @@ function renderDashboard() {
 function renderBudget() {
   const b = State.budget;
   if (!b) {
-    $("#view-root").innerHTML = `<div class="view"><div class="empty-state"><b>Budget non configuré.</b></div></div>`;
+    $("#view-root").innerHTML = `<div class="view"><div class="empty-state"><b>Budget not configured.</b></div></div>`;
     return;
   }
-  const local = { investPct: b.invest_pct, dcaMode: b.dca_mode }; // état local du formulaire
+  const local = { investPct: b.invest_pct, dcaMode: b.dca_mode }; // local form state
   const income = b.monthly_income;
   const monthlyOf = pct => income * pct / 100;
   const rest = () => Math.max(0, income - b.housing - b.daily_life - b.subscriptions - monthlyOf(local.investPct));
 
   const sankey = () => sankeySvg(income, [
-    { label: "Investissements mensuels", value: monthlyOf(local.investPct), color: "#e3b567" },
-    { label: "Logement", value: b.housing, color: "#8f8fd9" },
-    { label: "Vie quotidienne", value: b.daily_life, color: "#6fb8b0" },
-    { label: "Abonnements", value: b.subscriptions, color: "#7fb88f" },
-    { label: "Reste à vivre", value: rest(), color: "#9a9cae" },
+    { label: "Monthly Investments", value: monthlyOf(local.investPct), color: "#e3b567" },
+    { label: "Housing", value: b.housing, color: "#8f8fd9" },
+    { label: "Daily Life", value: b.daily_life, color: "#6fb8b0" },
+    { label: "Subscriptions", value: b.subscriptions, color: "#7fb88f" },
+    { label: "Remaining Balance", value: rest(), color: "#9a9cae" },
   ]);
 
   $("#view-root").innerHTML = `<div class="view">
-    <div class="budget-intro"><p>Le flux ci-dessous se lit comme sur Finary : votre salaire alimente le budget, qui se répartit entre dépenses fixes, investissements et reste à vivre. Déplacez le curseur pour voir l'effet d'un changement de pourcentage — rien n'est enregistré tant que vous ne confirmez pas.</p></div>
+    <div class="budget-intro"><p>The chart below works just like Finary: your salary funds the budget, which is distributed between fixed expenses, investments, and remaining balance. Move the slider to see the effect of changing the percentage — nothing is saved until you confirm.</p></div>
 
     <div class="card">
-      <div class="card-title">Flux mensuel — ${fmtEur(income)}</div>
+      <div class="card-title">Monthly Flow — ${fmtEur(income)}</div>
       <div class="sankey-wrap" id="sankey-wrap">${sankey()}</div>
     </div>
 
     <div class="budget-grid">
       <div class="card">
-        <div class="card-title">Part investie chaque mois</div>
+        <div class="card-title">Share Invested Monthly</div>
         <div class="budget-stat-row">
-          <div><div class="tiny-label">Salaire</div><div class="mono budget-figure">${fmtEur(income)}</div></div>
-          <div><div class="tiny-label">Dépenses fixes</div><div class="mono budget-figure">${fmtEur(b.housing + b.daily_life + b.subscriptions)}</div></div>
-          <div><div class="tiny-label">Reste à vivre</div><div class="mono budget-figure" id="bg-rest">${fmtEur(rest())}</div></div>
+          <div><div class="tiny-label">Salary</div><div class="mono budget-figure">${fmtEur(income)}</div></div>
+          <div><div class="tiny-label">Fixed Expenses</div><div class="mono budget-figure">${fmtEur(b.housing + b.daily_life + b.subscriptions)}</div></div>
+          <div><div class="tiny-label">Remaining</div><div class="mono budget-figure" id="bg-rest">${fmtEur(rest())}</div></div>
         </div>
-        <label class="tiny-label">Pourcentage du salaire investi</label>
+        <label class="tiny-label">Percentage of salary invested</label>
         <input id="bg-pct" class="budget-slider" type="range" min="0" max="40" step="1" value="${local.investPct}">
         <div class="budget-slider-readout">
           <span class="mono" style="font-size:22px;" id="bg-pct-val">${local.investPct} %</span>
-          <span style="color:var(--text-tertiary);font-size:12px;" id="bg-pct-eur">≈ ${fmtEur(monthlyOf(local.investPct))} / mois</span>
+          <span style="color:var(--text-tertiary);font-size:12px;" id="bg-pct-eur">≈ ${fmtEur(monthlyOf(local.investPct))} / month</span>
         </div>
         <div class="budget-alert" id="bg-alert" style="display:${local.investPct > State.thresholdPct ? "flex" : "none"};">
-          ${icon.warn}<div>Au-delà de <b>${State.thresholdPct} %</b> de vos revenus : une confirmation explicite vous sera demandée à l'enregistrement. La décision reste la vôtre.</div>
+          ${icon.warn}<div>Above <b>${State.thresholdPct} %</b> of your income: an explicit confirmation will be requested when saving. The decision remains yours.</div>
         </div>
         <div class="mode-toggle" style="margin-top:14px;">
-          <button type="button" data-mode="dca" class="${local.dcaMode === "dca" ? "active" : ""}">DCA — tous les mois</button>
-          <button type="button" data-mode="once" class="${local.dcaMode === "once" ? "active" : ""}">Versement unique</button>
+          <button type="button" data-mode="dca" class="${local.dcaMode === "dca" ? "active" : ""}">DCA — Monthly</button>
+          <button type="button" data-mode="once" class="${local.dcaMode === "once" ? "active" : ""}">One-time Deposit</button>
         </div>
-        <button class="btn-primary" id="bg-save" style="margin-top:14px;">Enregistrer le budget</button>
+        <button class="btn-primary" id="bg-save" style="margin-top:14px;">Save Budget</button>
         ${State.plan && State.plan.active ? `
         <div class="budget-alert ok" style="margin-top:14px;">
-          ${icon.check}<div>Plan DCA actif : <b>${fmtEur(State.plan.monthly_amount, 2)}</b> / mois.
-          ${State.plan.last_executed_at ? `Dernier versement : ${esc(State.plan.last_executed_at.slice(0, 10))}.` : "Aucun versement exécuté pour l'instant."}</div>
+          ${icon.check}<div>Active DCA Plan: <b>${fmtEur(State.plan.monthly_amount, 2)}</b> / month.
+          ${State.plan.last_executed_at ? `Last deposit: ${esc(State.plan.last_executed_at.slice(0, 10))}.` : "No deposit executed yet."}</div>
         </div>
-        <button class="btn-ghost" id="bg-exec">Exécuter le versement de ce mois (${fmtEur(State.plan.monthly_amount, 2)})</button>` : ""}
+        <button class="btn-ghost" id="bg-exec">Execute this month's deposit (${fmtEur(State.plan.monthly_amount, 2)})</button>` : ""}
       </div>
 
       <div class="card">
-        <div class="card-title">Ajouter de l'argent en cours de route</div>
+        <div class="card-title">Add One-Time Cash</div>
         <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px;">
-          Un versement ponctuel s'ajoute à votre plan. S'il dépasse <b>${State.thresholdPct} %</b> de votre salaire mensuel, un avertissement s'affiche et votre confirmation est obligatoire.</p>
-        <div class="field"><label>Montant (€)</label><input id="dep-amount" type="number" min="1" placeholder="200"></div>
-        <button class="btn-primary" id="dep-btn">Verser sur mon compte virtuel</button>
+          A one-time deposit adds to your plan. If it exceeds <b>${State.thresholdPct}%</b> of your monthly salary, a warning will be displayed and your confirmation is required.</p>
+        <div class="field"><label>Amount (€)</label><input id="dep-amount" type="number" min="1" placeholder="200"></div>
+        <button class="btn-primary" id="dep-btn">Deposit into my virtual account</button>
 
-        <div class="card-title" style="margin-top:22px;">Historique des versements</div>
+        <div class="card-title" style="margin-top:22px;">Deposit History</div>
         <div class="deposit-history" id="dep-history">${depositHistoryHtml()}</div>
       </div>
     </div>
   </div>`;
 
-  /* --- interactions EN PLACE : le slider ne re-rend jamais toute la page --- */
+  /* --- IN PLACE interactions --- */
   const slider = $("#bg-pct");
   slider.addEventListener("input", () => {
     local.investPct = +slider.value;
     $("#bg-pct-val").textContent = local.investPct + " %";
-    $("#bg-pct-eur").textContent = "≈ " + fmtEur(monthlyOf(local.investPct)) + " / mois";
+    $("#bg-pct-eur").textContent = "≈ " + fmtEur(monthlyOf(local.investPct)) + " / month";
     $("#bg-rest").textContent = fmtEur(rest());
     $("#bg-alert").style.display = local.investPct > State.thresholdPct ? "flex" : "none";
     $("#sankey-wrap").innerHTML = sankey();
@@ -818,75 +819,75 @@ function renderBudget() {
       });
       if (res.confirmationRequired) {
         const ok = await confirmModal({
-          title: "Au-delà du seuil de prudence",
-          body: `Vous souhaitez investir <b>${local.investPct} %</b> de vos revenus, soit <b>${fmtEur(monthlyOf(local.investPct))}</b> par mois.`,
-          warning: `Le seuil de prudence est fixé à <b>${State.thresholdPct} %</b> de vos revenus mensuels. C'est votre décision — nous voulons seulement qu'elle soit prise en connaissance de cause.`,
-          checkLabel: "Je comprends le risque et je confirme ce pourcentage.",
-          confirmText: "Confirmer " + local.investPct + " %",
+          title: "Above Caution Threshold",
+          body: `You wish to invest <b>${local.investPct} %</b> of your income, which is <b>${fmtEur(monthlyOf(local.investPct))}</b> per month.`,
+          warning: `The caution threshold is set at <b>${State.thresholdPct} %</b> of your monthly income. This is your decision — we only want it to be made with full awareness.`,
+          checkLabel: "I understand the risk and confirm this percentage.",
+          confirmText: "Confirm " + local.investPct + " %",
         });
         if (ok) return saveBudget(true);
         return;
       }
       State.budget = res.budget; State.plan = res.plan;
-      toast("Budget enregistré ✓", "success");
+      toast("Budget saved ✓", "success");
       renderBudget();
-    } catch (e) { toast("Erreur lors de l'enregistrement.", "error"); }
+    } catch (e) { toast("Error saving budget.", "error"); }
   };
   $("#bg-save").addEventListener("click", () => saveBudget(false));
 
   const execBtn = $("#bg-exec");
   if (execBtn) execBtn.addEventListener("click", async () => {
     const ok = await confirmModal({
-      title: "Versement mensuel",
-      body: `Exécuter le versement DCA de ce mois : <b>${fmtEur(State.plan.monthly_amount, 2)}</b> seront ajoutés à vos liquidités virtuelles.`,
+      title: "Monthly Deposit",
+      body: `Execute this month's DCA deposit: <b>${fmtEur(State.plan.monthly_amount, 2)}</b> will be added to your virtual cash.`,
     });
     if (!ok) return;
     try {
       const res = await API.post("/api/budget/plan/execute");
       State.user = res.user;
       await Promise.all([refreshPortfolio(), refreshBudget()]);
-      toast(`Versement de ${fmtEur(res.executed, 2)} effectué ✓`, "success");
+      toast(`Deposit of ${fmtEur(res.executed, 2)} completed ✓`, "success");
       renderBudget();
     } catch (e) {
-      toast(e.code === "NO_ACTIVE_PLAN" ? "Aucun plan actif." : "Erreur lors du versement.", "error");
+      toast(e.code === "NO_ACTIVE_PLAN" ? "No active plan." : "Error executing deposit.", "error");
     }
   });
 
   const doDeposit = async confirmed => {
     const amount = +$("#dep-amount").value;
-    if (!amount || amount <= 0) { toast("Indiquez un montant valide.", "error"); return; }
+    if (!amount || amount <= 0) { toast("Enter a valid amount.", "error"); return; }
     try {
       const res = await API.post("/api/budget/deposit", { amount, confirmedOverThreshold: confirmed });
       if (res.confirmationRequired) {
         const ok = await confirmModal({
-          title: "Versement au-dessus du seuil",
-          body: `Vous êtes sur le point de verser <b>${fmtEur(amount, 2)}</b>, soit <b>${res.pctOfIncome} %</b> de votre salaire mensuel.`,
-          warning: `Ce montant dépasse le seuil de prudence de <b>${res.threshold} %</b>. Vous restez libre de continuer — confirmez simplement que c'est un choix assumé.`,
-          checkLabel: "Je comprends et je confirme ce versement.",
-          confirmText: "Verser " + fmtEur(amount, 2),
+          title: "Deposit Above Threshold",
+          body: `You are about to deposit <b>${fmtEur(amount, 2)}</b>, which represents <b>${res.pctOfIncome} %</b> of your monthly salary.`,
+          warning: `This amount exceeds the caution threshold of <b>${res.threshold} %</b>. You are free to proceed — simply confirm that this is a deliberate choice.`,
+          checkLabel: "I understand and confirm this deposit.",
+          confirmText: "Deposit " + fmtEur(amount, 2),
         });
         if (ok) return doDeposit(true);
         return;
       }
       State.user = res.user;
       await Promise.all([refreshPortfolio(), refreshBudget()]);
-      toast(`Versement de ${fmtEur(amount, 2)} effectué ✓`, "success");
+      toast(`Deposit of ${fmtEur(amount, 2)} completed ✓`, "success");
       $("#dep-history").innerHTML = depositHistoryHtml();
       $("#dep-amount").value = "";
       updateCashChip();
-    } catch (e) { toast("Erreur lors du versement.", "error"); }
+    } catch (e) { toast("Error making deposit.", "error"); }
   };
   $("#dep-btn").addEventListener("click", () => doDeposit(false));
 }
 
 function depositHistoryHtml() {
-  if (!State.deposits.length) return `<div class="empty-state" style="padding:18px;">Aucun versement pour l'instant.</div>`;
+  if (!State.deposits.length) return `<div class="empty-state" style="padding:18px;">No deposits yet.</div>`;
   return State.deposits.map(d => `
     <div class="deposit-row">
       <div>
-        <div>${d.type === "monthly" ? "Versement mensuel (DCA)" : "Versement ponctuel"}
-          ${d.over_threshold ? `<span class="tag warning" style="margin-left:6px;">&gt; ${State.thresholdPct}% confirmé</span>` : ""}</div>
-        <div class="when">${esc((d.created_at || "").slice(0, 16))}${d.pct_of_income != null ? ` · ${(+d.pct_of_income).toFixed(1)} % du salaire` : ""}</div>
+        <div>${d.type === "monthly" ? "Monthly Deposit (DCA)" : "One-time Deposit"}
+          ${d.over_threshold ? `<span class="tag warning" style="margin-left:6px;">&gt; ${State.thresholdPct}% confirmed</span>` : ""}</div>
+        <div class="when">${esc((d.created_at || "").slice(0, 16))}${d.pct_of_income != null ? ` · ${(+d.pct_of_income).toFixed(1)} % of salary` : ""}</div>
       </div>
       <div class="mono" style="color:var(--positive);">+${fmtEur(d.amount, 2)}</div>
     </div>`).join("");
@@ -901,10 +902,10 @@ function renderTrading() {
     <div>
       <div class="search-box">
         ${icon.search}
-        <input id="tr-search" type="text" placeholder="Rechercher une action, un ETF, une crypto…" autocomplete="off">
+        <input id="tr-search" type="text" placeholder="Search stock, ETF, crypto..." autocomplete="off">
         <div class="search-results" id="tr-results"></div>
       </div>
-      <div class="card-title" style="margin-bottom:8px;">Mes positions</div>
+      <div class="card-title" style="margin-bottom:8px;">My positions</div>
       <div id="tr-watchlist">
         ${pf.positions.length ? pf.positions.map(h => `
         <div class="watchlist-item ${h.symbol === State.trade.symbol ? "active" : ""}" data-sym="${esc(h.symbol)}">
@@ -914,26 +915,26 @@ function renderTrading() {
             <div style="font-size:10.5px;color:var(--text-tertiary);">${esc(h.name || "")}</div></div>
           </div>
           <div class="mono" style="font-size:12px;color:${h.changePct >= 0 ? "var(--positive)" : "var(--negative)"}">${fmtPct(h.changePct)}</div>
-        </div>`).join("") : `<div class="empty-state" style="padding:18px;">Aucune position. Cherchez un actif ci-dessus pour commencer.</div>`}
+        </div>`).join("") : `<div class="empty-state" style="padding:18px;">No positions. Search for an asset above to start.</div>`}
       </div>
-      <div class="card-title" style="margin:18px 0 8px;">Populaires</div>
+      <div class="card-title" style="margin:18px 0 8px;">Popular</div>
       <div id="tr-popular">
-        ${[["AAPL","Apple","stock"],["MC.PA","LVMH","stock"],["CW8.PA","ETF Monde","etf"],["BTC","Bitcoin","crypto"],["ETH","Ethereum","crypto"],["OAT10","OAT 10 ans","bond"]].map(p => `
+        ${[["AAPL","Apple","stock"],["MC.PA","LVMH","stock"],["CW8.PA","World ETF","etf"],["BTC","Bitcoin","crypto"],["ETH","Ethereum","crypto"],["OAT10","OAT 10 years","bond"]].map(p => `
         <div class="watchlist-item" data-sym="${p[0]}">
           <div class="watchlist-left">
             <div class="stock-logo" style="width:26px;height:26px;font-size:9.5px;background:${CLASS_COLORS[p[2]]};">${p[0].slice(0, 2)}</div>
             <div><div style="font-weight:600;font-size:12.5px;">${p[0]}</div>
             <div style="font-size:10.5px;color:var(--text-tertiary);">${p[1]}</div></div>
           </div>
-          <span class="tag" style="background:${CLASS_COLORS[p[2]]}22;color:${CLASS_COLORS[p[2]]};font-size:10px;">${CLASS_FR[p[2]]}</span>
+          <span class="tag" style="background:${CLASS_COLORS[p[2]]}22;color:${CLASS_COLORS[p[2]]};font-size:10px;">${CLASS_EN[p[2]]}</span>
         </div>`).join("")}
       </div>
     </div>
-    <div class="card" id="tr-detail"><div class="empty-state">Sélectionnez une action ou utilisez la recherche.</div></div>
+    <div class="card" id="tr-detail"><div class="empty-state">Select an asset or use search.</div></div>
     <div class="card" id="tr-order"></div>
   </div></div>`;
 
-  /* --- recherche : debounce 250 ms sur /api/market/search --- */
+  /* --- search: 250ms debounce on /api/market/search --- */
   const input = $("#tr-search");
   const resultsEl = $("#tr-results");
   let debounce = null;
@@ -947,10 +948,10 @@ function renderTrading() {
         resultsEl.innerHTML = results.length
           ? results.map(r => `
             <div class="search-result" data-sym="${esc(r.symbol)}">
-              <span class="sym">${esc(r.symbol)} ${r.assetClass && r.assetClass !== "stock" ? `<span class="tag" style="background:${CLASS_COLORS[r.assetClass]}22;color:${CLASS_COLORS[r.assetClass]};font-size:9.5px;margin-left:5px;">${CLASS_FR[r.assetClass]}</span>` : ""}</span>
+              <span class="sym">${esc(r.symbol)} ${r.assetClass && r.assetClass !== "stock" ? `<span class="tag" style="background:${CLASS_COLORS[r.assetClass]}22;color:${CLASS_COLORS[r.assetClass]};font-size:9.5px;margin-left:5px;">${CLASS_EN[r.assetClass]}</span>` : ""}</span>
               <span class="desc">${esc(r.description || "")}</span>
             </div>`).join("")
-          : `<div class="search-empty">Aucun résultat pour « ${esc(q)} ».</div>`;
+          : `<div class="search-empty">No results for "${esc(q)}".</div>`;
         resultsEl.classList.add("open");
         resultsEl.querySelectorAll("[data-sym]").forEach(el =>
           el.addEventListener("click", () => {
@@ -958,7 +959,7 @@ function renderTrading() {
             input.value = "";
             selectSymbol(el.dataset.sym);
           }));
-      } catch (e) { /* silencieux */ }
+      } catch (e) { /* silent */ }
     }, 250);
   });
   document.addEventListener("click", e => {
@@ -979,7 +980,7 @@ async function selectSymbol(symbol) {
     el.classList.toggle("active", el.dataset.sym === symbol));
   const detailEl = $("#tr-detail");
   if (!detailEl) return;
-  detailEl.innerHTML = `<div class="empty-state">Chargement de ${esc(symbol)}…</div>`;
+  detailEl.innerHTML = `<div class="empty-state">Loading ${esc(symbol)}...</div>`;
   try {
     const d = await API.get("/api/market/stock/" + encodeURIComponent(symbol));
     State.trade.detail = d;
@@ -989,24 +990,24 @@ async function selectSymbol(symbol) {
         <div style="display:flex;align-items:center;gap:10px;">
           <div class="stock-logo">${esc(symbol.slice(0, 2))}</div>
           <div><div style="font-weight:700;font-size:15px;">${esc(d.name || symbol)}</div>
-          <div class="stock-ticker">${esc(symbol)} · ${esc(SECTOR_FR[d.sector] || d.sector || "—")} · ${esc(d.country || "—")} ${classTag(d.assetClass)}</div></div>
+          <div class="stock-ticker">${esc(symbol)} · ${esc(SECTOR_EN[d.sector] || d.sector || "—")} · ${esc(d.country || "—")} ${classTag(d.assetClass)}</div></div>
         </div>
         <div style="text-align:right;">
           <div class="stock-detail-price" data-live="price:${esc(symbol)}">${fmtEur(d.price, 2)}</div>
           <span class="tag ${d.changePct >= 0 ? "positive" : "negative"}" data-live="chg:${esc(symbol)}">${fmtPct(d.changePct)}</span>
-          ${d.simulated && !State.demoMode ? `<div style="margin-top:6px;"><span class="tag warning">cours simulé (hors couverture API)</span></div>` : ""}
-          ${d.yieldPct ? `<div style="margin-top:6px;"><span class="tag positive">rendement ~${d.yieldPct}%/an</span></div>` : ""}
+          ${d.simulated && !State.demoMode ? `<div style="margin-top:6px;"><span class="tag warning">simulated price (no API coverage)</span></div>` : ""}
+          ${d.yieldPct ? `<div style="margin-top:6px;"><span class="tag positive">yield ~${d.yieldPct}%/year</span></div>` : ""}
         </div>
       </div>
       <div class="chart-area">${sparklineSvg(d.sparkline, { w: 520, h: 180, stroke: d.changePct >= 0 ? "#7fb88f" : "#e0645a", fill: true })}</div>
       ${held ? `
       <div style="display:flex;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border);">
-        <div><div class="tiny-label">Position actuelle</div><div class="mono" style="font-size:14px;margin-top:4px;">${fmtQty(held.shares)} titre(s) · <span data-live="value:${esc(symbol)}">${fmtEur(held.value)}</span></div></div>
-        <div><div class="tiny-label">Prix de revient</div><div class="mono" style="font-size:14px;margin-top:4px;">${fmtEur(held.avg_cost, 2)}</div></div>
-        <div><div class="tiny-label">+/- value latente</div><div class="mono" style="font-size:14px;margin-top:4px;color:${held.pnl >= 0 ? "var(--positive)" : "var(--negative)"}">${held.pnl >= 0 ? "+" : ""}${fmtEur(held.pnl)}</div></div>
+        <div><div class="tiny-label">Current Position</div><div class="mono" style="font-size:14px;margin-top:4px;">${fmtQty(held.shares)} share(s) · <span data-live="value:${esc(symbol)}">${fmtEur(held.value)}</span></div></div>
+        <div><div class="tiny-label">Average Cost</div><div class="mono" style="font-size:14px;margin-top:4px;">${fmtEur(held.avg_cost, 2)}</div></div>
+        <div><div class="tiny-label">Unrealized P&L</div><div class="mono" style="font-size:14px;margin-top:4px;color:${held.pnl >= 0 ? "var(--positive)" : "var(--negative)"}">${held.pnl >= 0 ? "+" : ""}${fmtEur(held.pnl)}</div></div>
       </div>` : ""}`;
   } catch (e) {
-    detailEl.innerHTML = `<div class="empty-state"><b>Symbole introuvable.</b> Essayez une autre recherche.</div>`;
+    detailEl.innerHTML = `<div class="empty-state"><b>Symbol not found.</b> Try another search.</div>`;
     State.trade.detail = null;
   }
   renderOrderForm();
@@ -1016,24 +1017,24 @@ function renderOrderForm() {
   const el = $("#tr-order");
   if (!el) return;
   const d = State.trade.detail;
-  if (!d) { el.innerHTML = `<div class="card-title">Passer un ordre</div><div class="empty-state" style="padding:18px;">Sélectionnez d'abord un actif.</div>`; return; }
+  if (!d) { el.innerHTML = `<div class="card-title">Place an Order</div><div class="empty-state" style="padding:18px;">Select an asset first.</div>`; return; }
   const t = State.trade;
   el.innerHTML = `
-    <div class="card-title">Passer un ordre</div>
+    <div class="card-title">Place an Order</div>
     <div class="buysell-toggle">
-      <button type="button" class="buy ${t.side === "buy" ? "active" : ""}" data-side="buy">Acheter</button>
-      <button type="button" class="sell ${t.side === "sell" ? "active" : ""}" data-side="sell">Vendre</button>
+      <button type="button" class="buy ${t.side === "buy" ? "active" : ""}" data-side="buy">Buy</button>
+      <button type="button" class="sell ${t.side === "sell" ? "active" : ""}" data-side="sell">Sell</button>
     </div>
     <div class="order-form">
-      <label>Saisie de l'ordre</label>
+      <label>Order Input</label>
       <div class="mode-toggle" style="margin-bottom:10px;">
-        <button type="button" data-imode="qty" class="${t.inputMode === "qty" ? "active" : ""}">En quantité</button>
-        <button type="button" data-imode="eur" class="${t.inputMode === "eur" ? "active" : ""}">En euros</button>
+        <button type="button" data-imode="qty" class="${t.inputMode === "qty" ? "active" : ""}">By Quantity</button>
+        <button type="button" data-imode="eur" class="${t.inputMode === "eur" ? "active" : ""}">By Amount (€)</button>
       </div>
       <div id="order-input-zone"></div>
       <div id="order-summary"></div>
       <button class="btn-primary" id="order-btn" style="margin-top:14px;"></button>
-      <div class="hint" style="margin-top:8px;color:var(--text-tertiary);font-size:11px;">Fractions autorisées (jusqu'à 6 décimales) — comme sur les courtiers modernes, vous pouvez acheter 0,001 Bitcoin ou 0,5 action.</div>
+      <div class="hint" style="margin-top:8px;color:var(--text-tertiary);font-size:11px;">Fractional shares allowed (up to 6 decimals) — like modern brokers, you can buy 0.001 Bitcoin or 0.5 shares.</div>
     </div>`;
   el.querySelectorAll("[data-side]").forEach(b =>
     b.addEventListener("click", () => {
@@ -1060,7 +1061,7 @@ function heldShares() {
   return held ? held.shares : 0;
 }
 
-/* zone de saisie : quantité (avec +/− et Max) ou montant en euros */
+/* input zone: quantity (with +/− and Max) or amount in euros */
 function renderOrderInputZone() {
   const zone = $("#order-input-zone");
   const t = State.trade;
@@ -1072,7 +1073,7 @@ function renderOrderInputZone() {
         <input id="qty-input" type="text" inputmode="decimal" value="${fmtQty(t.qty)}">
         <button type="button" id="qty-plus">+</button>
       </div>
-      <button type="button" class="btn-ghost" id="qty-max" style="margin-top:8px;padding:8px;font-size:12px;">${t.side === "buy" ? "Max (toutes mes liquidités)" : "Tout vendre"}</button>`;
+      <button type="button" class="btn-ghost" id="qty-max" style="margin-top:8px;padding:8px;font-size:12px;">${t.side === "buy" ? "Max (all my cash)" : "Sell All"}</button>`;
     $("#qty-minus").addEventListener("click", () => stepQty(-0.5));
     $("#qty-plus").addEventListener("click", () => stepQty(+0.5));
     $("#qty-input").addEventListener("change", e => setQty(parseDecimal(e.target.value)));
@@ -1087,7 +1088,7 @@ function renderOrderInputZone() {
         <input id="amount-input" type="text" inputmode="decimal" value="${fmtQty(t.amount)}" style="padding:0 12px;text-align:left;">
         <span style="padding:0 12px;color:var(--text-tertiary);font-family:var(--font-mono);">€</span>
       </div>
-      <button type="button" class="btn-ghost" id="amount-max" style="margin-top:8px;padding:8px;font-size:12px;">${t.side === "buy" ? "Max (toutes mes liquidités)" : "Tout vendre"}</button>`;
+      <button type="button" class="btn-ghost" id="amount-max" style="margin-top:8px;padding:8px;font-size:12px;">${t.side === "buy" ? "Max (all my cash)" : "Sell All"}</button>`;
     $("#amount-input").addEventListener("change", e => {
       t.amount = Math.max(0.01, Math.min(10_000_000, parseDecimal(e.target.value) || 0.01));
       e.target.value = fmtQty(t.amount);
@@ -1103,13 +1104,13 @@ function renderOrderInputZone() {
   }
 }
 
-/* "0,001" ou "0.001" → 0.001 */
+/* "0,001" or "0.001" → 0.001 */
 function parseDecimal(v) {
   return parseFloat(String(v).replace(/\s/g, "").replace(",", "."));
 }
 
-/* boutons +/− : pas de 0,5 avec plancher à 0,5 (la saisie libre au clavier
-   reste possible jusqu'à 0,000001 pour la crypto) */
+/* +/− buttons: no 0.5 with floor at 0.5 (free input via keyboard
+   remains possible down to 0.000001 for crypto) */
 function stepQty(delta) {
   const next = Math.round((State.trade.qty + delta) * 1e6) / 1e6;
   setQty(next < 0.5 ? 0.5 : next);
@@ -1123,7 +1124,7 @@ function setQty(q) {
   updateOrderSummary();
 }
 
-/* quantité réellement envoyée au serveur selon le mode de saisie */
+/* actual quantity sent to server depending on input mode */
 function effectiveQty() {
   const t = State.trade, d = t.detail;
   if (!d) return 0;
@@ -1140,13 +1141,13 @@ function updateOrderSummary() {
   const cash = State.portfolio.cash;
   const after = State.trade.side === "buy" ? cash - est : cash + est;
   sumEl.innerHTML = `
-    <div class="order-summary-row"><span>Cours actuel</span><b>${fmtEur(d.price, 2)}</b></div>
-    <div class="order-summary-row"><span>Quantité</span><b>${fmtQty(qty)}</b></div>
-    <div class="order-summary-row"><span>Montant estimé</span><b>${fmtEur(est, 2)}</b></div>
-    <div class="order-summary-row"><span>Liquidités après ordre</span><b style="color:${after < 0 ? "var(--negative)" : "inherit"}">${fmtEur(after, 2)}</b></div>`;
+    <div class="order-summary-row"><span>Current Price</span><b>${fmtEur(d.price, 2)}</b></div>
+    <div class="order-summary-row"><span>Quantity</span><b>${fmtQty(qty)}</b></div>
+    <div class="order-summary-row"><span>Estimated Amount</span><b>${fmtEur(est, 2)}</b></div>
+    <div class="order-summary-row"><span>Cash after order</span><b style="color:${after < 0 ? "var(--negative)" : "inherit"}">${fmtEur(after, 2)}</b></div>`;
   const btn = $("#order-btn");
   if (btn) {
-    btn.textContent = State.trade.side === "buy" ? "Confirmer l'achat" : "Confirmer la vente";
+    btn.textContent = State.trade.side === "buy" ? "Confirm Purchase" : "Confirm Sale";
     btn.disabled = qty <= 0;
   }
 }
@@ -1156,25 +1157,26 @@ async function placeOrder() {
   if (!d) return;
   const side = State.trade.side;
   const qty = effectiveQty();
-  if (qty <= 0) { toast("Quantité invalide.", "error"); return; }
+  if (qty <= 0) { toast("Invalid quantity.", "error"); return; }
   const est = d.price * qty;
   const ok = await confirmModal({
-    title: side === "buy" ? "Confirmer l'achat" : "Confirmer la vente",
-    body: `${side === "buy" ? "Acheter" : "Vendre"} <b>${fmtQty(qty)} × ${esc(d.symbol)}</b> au cours du marché (~${fmtEur(d.price, 2)} / titre), soit environ <b>${fmtEur(est, 2)}</b>.<br><br>Le prix exécuté sera le cours serveur au moment de l'ordre.`,
+    title: side === "buy" ? "Confirm Purchase" : "Confirm Sale",
+    body: `${side === "buy" ? "Buy" : "Sell"} <b>${fmtQty(qty)} × ${esc(d.symbol)}</b> at market price (~${fmtEur(d.price, 2)} / share), totaling approximately <b>${fmtEur(est, 2)}</b>.<br><br>The executed price will be the server price at the time of the order.`,
   });
   if (!ok) return;
   try {
     const res = await API.post("/api/portfolio/order", { symbol: d.symbol, side, qty });
     await refreshPortfolio();
-    State.newsCache = {}; // holdings changed → le flux personnalisé doit être rechargé
-    toast(`Ordre exécuté : ${fmtQty(res.qty ?? qty)} × ${fmtEur(res.executedPrice, 2)} — total ${fmtEur(res.total, 2)} ✓`, "success");
+    State.newsCache = {}; // holdings changed → personalized feed needs refresh
+    toast(`Order executed: ${fmtQty(res.qty ?? qty)} × ${fmtEur(res.executedPrice, 2)} — total ${fmtEur(res.total, 2)} ✓`, "success");
     renderTrading();
   } catch (e) {
-    const map = { INSUFFICIENT_CASH: "Liquidités insuffisantes — alimentez votre compte dans Budget.", INSUFFICIENT_SHARES: "Vous ne détenez pas assez de titres.", SYMBOL_NOT_FOUND: "Symbole introuvable.", INVALID_QTY: "Quantité invalide." };
-    toast(map[e.code] || "Erreur lors de l'ordre.", "error");
+    const map = { INSUFFICIENT_CASH: "Insufficient cash — fund your account in Budget.", INSUFFICIENT_SHARES: "You do not own enough shares.", SYMBOL_NOT_FOUND: "Symbol not found.", INVALID_QTY: "Invalid quantity." };
+    toast(map[e.code] || "Error placing order.", "error");
   }
 }
 
+/* ================================================================= NEWS = */
 /* ================================================================= NEWS = */
 function newsThumbHtml(n) {
   return n.image
@@ -1191,9 +1193,9 @@ function newsCardHtml(n) {
       <div class="news-card-body">
         <div class="news-meta">
           <span class="tag news-cat-tag">${esc(NEWS_CAT_LABEL[n.category] || n.category)}</span>
-          ${n.personalized ? `<span class="tag positive">Votre portefeuille</span>` : ""}
+          ${n.personalized ? `<span class="tag positive">Your Portfolio</span>` : ""}
           <span class="news-source">${esc(n.source || "")}</span>
-          <span class="news-time">· il y a ${timeAgo(n.datetime)}</span>
+          <span class="news-time">· ${timeAgo(n.datetime)}</span>
         </div>
         <div class="news-headline">${esc(n.headline)}</div>
         <div class="news-summary">${esc(n.summary || "")}</div>
@@ -1204,9 +1206,9 @@ function newsCardHtml(n) {
 
 function newsEmptyMessage(category, held) {
   if (category === "portfolio" && !held.length) {
-    return `<div class="empty-state"><b>Aucune position pour le moment.</b><br>Alimentez votre compte puis passez un ordre dans « Investir » : votre flux personnalisé apparaîtra ici.</div>`;
+    return `<div class="empty-state"><b>No positions yet.</b><br>Fund your account and place an order in "Invest": your personalized feed will appear here.</div>`;
   }
-  return `<div class="empty-state">Aucune actualité pour ce filtre pour le moment.</div>`;
+  return `<div class="empty-state">No news for this filter at the moment.</div>`;
 }
 
 async function fetchNewsCategory(category, { force = false } = {}) {
@@ -1225,7 +1227,7 @@ async function loadNews({ force = false } = {}) {
 
   if (State.newsCategory === "portfolio" && held.length) {
     symFiltersEl.style.display = "flex";
-    symFiltersEl.innerHTML = [`<button class="filter-chip ${State.newsSymbolFilter === "all" ? "active" : ""}" data-nf="all">Toutes mes positions</button>`,
+    symFiltersEl.innerHTML = [`<button class="filter-chip ${State.newsSymbolFilter === "all" ? "active" : ""}" data-nf="all">All my positions</button>`,
       ...held.map(s => `<button class="filter-chip ${State.newsSymbolFilter === s ? "active" : ""}" data-nf="${esc(s)}">${esc(s)}</button>`)].join("");
     symFiltersEl.querySelectorAll("[data-nf]").forEach(b =>
       b.addEventListener("click", () => { State.newsSymbolFilter = b.dataset.nf; loadNews(); }));
@@ -1234,7 +1236,7 @@ async function loadNews({ force = false } = {}) {
     symFiltersEl.innerHTML = "";
   }
 
-  listEl.innerHTML = `<div class="empty-state">Chargement des actualités…</div>`;
+  listEl.innerHTML = `<div class="empty-state">Loading news...</div>`;
   try {
     let items = await fetchNewsCategory(State.newsCategory, { force });
     if (State.newsCategory === "portfolio" && State.newsSymbolFilter !== "all") {
@@ -1247,7 +1249,7 @@ async function loadNews({ force = false } = {}) {
     listEl.querySelectorAll("img.news-thumb").forEach(img =>
       img.addEventListener("error", () => { img.outerHTML = `<div class="news-thumb news-thumb-fallback">${icon.news}</div>`; }));
   } catch (e) {
-    listEl.innerHTML = `<div class="empty-state">Impossible de charger les actualités pour le moment.</div>`;
+    listEl.innerHTML = `<div class="empty-state">Unable to load news at the moment.</div>`;
   }
 }
 
@@ -1267,10 +1269,10 @@ async function renderNews() {
       <div class="news-filters" id="news-cat-filters">
         ${cats.map(c => `<button class="filter-chip ${State.newsCategory === c.id ? "active" : ""}" data-cat="${c.id}">${esc(c.label)}</button>`).join("")}
       </div>
-      <button class="btn-ghost news-refresh-btn" id="news-refresh" type="button">${icon.refresh}<span>Actualiser</span></button>
+      <button class="btn-ghost news-refresh-btn" id="news-refresh" type="button">${icon.refresh}<span>Refresh</span></button>
     </div>
     <div class="news-filters" id="news-sym-filters" style="display:none;"></div>
-    <div class="news-list" id="news-list"><div class="empty-state">Chargement des actualités…</div></div>
+    <div class="news-list" id="news-list"><div class="empty-state">Loading news...</div></div>
   </div>`;
 
   $("#news-cat-filters").querySelectorAll("[data-cat]").forEach(b =>
@@ -1292,16 +1294,16 @@ function openNewsModal(item) {
   $("#news-modal-image").innerHTML = item.image ? `<img src="${esc(item.image)}" alt="" class="news-modal-img">` : "";
   $("#news-modal-meta").innerHTML = `
     <span class="tag news-cat-tag">${esc(NEWS_CAT_LABEL[item.category] || item.category)}</span>
-    ${item.personalized ? `<span class="tag positive">Votre portefeuille</span>` : ""}
+    ${item.personalized ? `<span class="tag positive">Your Portfolio</span>` : ""}
     <span class="news-source">${esc(item.source || "")}</span>
-    <span class="news-time">· ${new Date(item.datetime).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</span>`;
+    <span class="news-time">· ${new Date(item.datetime).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</span>`;
   $("#news-modal-title").textContent = item.headline;
-  $("#news-modal-summary").textContent = item.summary || "Pas de résumé disponible pour cet article.";
+  $("#news-modal-summary").textContent = item.summary || "No summary available for this article.";
 
   const companies = item.relatedSymbols || [];
   const companiesEl = $("#news-modal-companies");
   companiesEl.innerHTML = companies.length ? `
-    <div class="card-title" style="margin:16px 0 8px;font-size:12px;">Entreprises / actifs concernés</div>
+    <div class="card-title" style="margin:16px 0 8px;font-size:12px;">Related companies / assets</div>
     <div class="news-companies">${companies.map(c =>
       `<button class="news-stock-badge news-stock-badge-link" type="button" data-goto="${esc(c.symbol)}">${esc(c.symbol)} · ${esc(c.name)}</button>`).join("")}</div>` : "";
   companiesEl.querySelectorAll("[data-goto]").forEach(b =>

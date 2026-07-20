@@ -1,8 +1,8 @@
 /* ============================================================================
-   FINWISE — frontend SPA (vanilla JS, CSP-safe : aucun handler inline)
-   - Le budget se met à jour EN PLACE (plus de "saut" de page au clic/slider)
-   - La recherche d'actions est branchée sur /api/market/search (debounce)
-   - Les cours sont pollés toutes les 15s et patchés dans le DOM (tick-flash)
+   FINWISE — frontend SPA (vanilla JS, CSP-safe: no inline handlers)
+   - Budget updates IN PLACE (no more page "jumps" on click/slider)
+   - Stock search connected to /api/market/search (debounce)
+   - Prices polled every 15s and patched into the DOM (tick-flash)
 ============================================================================ */
 "use strict";
 
@@ -146,7 +146,7 @@ function riskGaugeSvg(pct) {
   </svg>`;
 }
 
-/* Sankey "façon Finary" : Salaire → Budget → catégories. */
+/* "Finary-style" Sankey: Salary → Budget → Categories. */
 function sankeySvg(income, cats) {
   const W = 920, H = 340, NODE_W = 12, PAD = 8, GAP = 10;
   const cols = [70, 430, 820];
@@ -479,7 +479,7 @@ async function enterApp() {
     const st = await API.get("/api/market/status");
     State.demoMode = !!st.demoMode;
     $("#demo-chip").style.display = State.demoMode ? "inline-block" : "none";
-  } catch (e) { /* non bloquant */ }
+  } catch (e) { /* non-blocking */ }
 
   await Promise.all([refreshPortfolio(), refreshBudget()]);
   navigate("dashboard");
@@ -551,7 +551,7 @@ async function pollQuotes() {
     if (State.trade.detail && quotes[State.trade.detail.symbol]) {
       Object.assign(State.trade.detail, quotes[State.trade.detail.symbol]);
     }
-    /* patch du DOM en place — pas de re-render : pas de scroll perdu */
+    /* DOM patch in place — no re-render: no lost scroll */
     document.querySelectorAll("[data-live]").forEach(el => {
       const parts = el.dataset.live.split(":");
       const kind = parts[0], sym = parts[1];
@@ -573,7 +573,7 @@ async function pollQuotes() {
     if (investedEl) investedEl.textContent = fmtEur(State.portfolio.invested);
     updateCashChip();
     if (State.view === "trading") updateOrderSummary();
-  } catch (e) { /* le prochain tick réessaiera */ }
+  } catch (e) { /* next tick will try again */ }
 }
 
 /* ============================================================ DASHBOARD = */
@@ -919,7 +919,7 @@ function renderTrading() {
       </div>
       <div class="card-title" style="margin:18px 0 8px;">Popular</div>
       <div id="tr-popular">
-        ${[["AAPL","Apple","stock"],["MC.PA","LVMH","stock"],["CW8.PA","World ETF","etf"],["BTC","Bitcoin","crypto"],["ETH","Ethereum","crypto"],["OAT10","OAT 10 years","bond"]].map(p => `
+        ${[["AAPL", "Apple", "stock"], ["MC.PA", "LVMH", "stock"], ["CW8.PA", "World ETF", "etf"], ["BTC", "Bitcoin", "crypto"], ["ETH", "Ethereum", "crypto"], ["OAT10", "OAT 10 years", "bond"]].map(p => `
         <div class="watchlist-item" data-sym="${p[0]}">
           <div class="watchlist-left">
             <div class="stock-logo" style="width:26px;height:26px;font-size:9.5px;background:${CLASS_COLORS[p[2]]};">${p[0].slice(0, 2)}</div>
@@ -1109,7 +1109,7 @@ function parseDecimal(v) {
   return parseFloat(String(v).replace(/\s/g, "").replace(",", "."));
 }
 
-/* +/− buttons: no 0.5 with floor at 0.5 (free input via keyboard
+/* +/− buttons: step 0.5 with floor at 0.5 (free input via keyboard
    remains possible down to 0.000001 for crypto) */
 function stepQty(delta) {
   const next = Math.round((State.trade.qty + delta) * 1e6) / 1e6;
@@ -1177,7 +1177,6 @@ async function placeOrder() {
 }
 
 /* ================================================================= NEWS = */
-/* ================================================================= NEWS = */
 function newsThumbHtml(n) {
   return n.image
     ? `<img src="${esc(n.image)}" alt="" class="news-thumb" loading="lazy">`
@@ -1228,7 +1227,7 @@ async function loadNews({ force = false } = {}) {
   if (State.newsCategory === "portfolio" && held.length) {
     symFiltersEl.style.display = "flex";
     symFiltersEl.innerHTML = [`<button class="filter-chip ${State.newsSymbolFilter === "all" ? "active" : ""}" data-nf="all">All my positions</button>`,
-      ...held.map(s => `<button class="filter-chip ${State.newsSymbolFilter === s ? "active" : ""}" data-nf="${esc(s)}">${esc(s)}</button>`)].join("");
+    ...held.map(s => `<button class="filter-chip ${State.newsSymbolFilter === s ? "active" : ""}" data-nf="${esc(s)}">${esc(s)}</button>`)].join("");
     symFiltersEl.querySelectorAll("[data-nf]").forEach(b =>
       b.addEventListener("click", () => { State.newsSymbolFilter = b.dataset.nf; loadNews(); }));
   } else {
@@ -1305,7 +1304,7 @@ function openNewsModal(item) {
   companiesEl.innerHTML = companies.length ? `
     <div class="card-title" style="margin:16px 0 8px;font-size:12px;">Related companies / assets</div>
     <div class="news-companies">${companies.map(c =>
-      `<button class="news-stock-badge news-stock-badge-link" type="button" data-goto="${esc(c.symbol)}">${esc(c.symbol)} · ${esc(c.name)}</button>`).join("")}</div>` : "";
+    `<button class="news-stock-badge news-stock-badge-link" type="button" data-goto="${esc(c.symbol)}">${esc(c.symbol)} · ${esc(c.name)}</button>`).join("")}</div>` : "";
   companiesEl.querySelectorAll("[data-goto]").forEach(b =>
     b.addEventListener("click", () => { closeNewsModal(); State.trade.symbol = b.dataset.goto; navigate("trading"); }));
 
@@ -1326,22 +1325,22 @@ async function renderAgent() {
     <div>
       <div id="agent-alerts"></div>
       <div class="card">
-        <div class="card-title">Conversation avec l'agent
+        <div class="card-title">Conversation with the Agent
           <div style="display:flex;gap:6px;">
-            <button class="filter-chip" id="chat-new">+ Nouvelle</button>
-            <button class="filter-chip" id="chat-clear">Supprimer</button>
+            <button class="filter-chip" id="chat-new">+ New</button>
+            <button class="filter-chip" id="chat-clear">Delete</button>
           </div>
         </div>
         <div class="chat-thread" id="chat-thread"></div>
         <div class="chat-input-row">
-          <input id="chat-input" type="text" placeholder="Écrire à l'agent… (ex : quel est mon risque ?)" maxlength="2000">
+          <input id="chat-input" type="text" placeholder="Write to the agent… (e.g.: what is my risk?)" maxlength="2000">
           <button id="chat-send">${icon.send}</button>
         </div>
       </div>
     </div>
     <div>
-      <div class="card" style="margin-bottom:16px;"><div class="card-title">Suggestions de rééquilibrage</div><div id="agent-suggestions"><div class="empty-state" style="padding:18px;">Analyse en cours…</div></div></div>
-      <div class="card"><div class="card-title">Conversations archivées</div><div id="chat-archives"></div></div>
+      <div class="card" style="margin-bottom:16px;"><div class="card-title">Rebalancing Suggestions</div><div id="agent-suggestions"><div class="empty-state" style="padding:18px;">Analysis in progress…</div></div></div>
+      <div class="card"><div class="card-title">Archived Conversations</div><div id="chat-archives"></div></div>
     </div>
   </div></div>`;
 
@@ -1353,14 +1352,14 @@ async function renderAgent() {
   $("#chat-new").addEventListener("click", newConversation);
   $("#chat-clear").addEventListener("click", async () => {
     const ok = await confirmModal({
-      title: "Supprimer la conversation",
-      body: "La conversation en cours sera définitivement supprimée (sans archivage). Continuer ?",
-      confirmText: "Supprimer",
+      title: "Delete conversation",
+      body: "The current conversation will be permanently deleted (without archiving). Continue?",
+      confirmText: "Delete",
     });
     if (!ok) return;
     resetChat();
     drawChat();
-    toast("Conversation supprimée", "success");
+    toast("Conversation deleted", "success");
   });
 
   try {
@@ -1369,29 +1368,29 @@ async function renderAgent() {
     $("#agent-alerts").innerHTML = a.alerts.length ? a.alerts.map(al => `
       <div class="alert-card">
         <div class="alert-icon">${icon.warn}</div>
-        <div><div class="alert-title">${al.type === "SECTOR_CONCENTRATION" ? "Sur-exposition détectée · " + esc(SECTOR_FR[al.label] || al.label) : "Concentration géographique · " + esc(al.label)}</div>
+        <div><div class="alert-title">${al.type === "SECTOR_CONCENTRATION" ? "Overexposure detected · " + esc(SECTOR_EN[al.label] || al.label) : "Geographical concentration · " + esc(al.label)}</div>
         <div class="alert-body">${esc(al.message)}</div></div>
       </div>`).join("") : `
-      <div class="budget-alert ok" style="margin:0 0 14px;">${icon.check}<div><b>Aucune alerte de concentration.</b> Votre allocation reste sous les seuils de vigilance — l'agent continue de surveiller.</div></div>`;
+      <div class="budget-alert ok" style="margin:0 0 14px;">${icon.check}<div><b>No concentration alerts.</b> Your allocation remains below caution thresholds — the agent continues monitoring.</div></div>`;
 
     const top = a.sectorBreakdown[0];
     const under = a.underRepresented.slice(0, 3);
     $("#agent-suggestions").innerHTML = a.sectorBreakdown.length ? `
       ${top && top.pct > a.threshold ? `
       <div class="suggestion-item"><div class="suggestion-icon">1</div>
-        <div class="suggestion-text">Alléger légèrement <b>${esc(SECTOR_FR[top.label] || top.label)}</b>, votre secteur dominant (${top.pct} %).</div></div>` : ""}
+        <div class="suggestion-text">Slightly reduce exposure to <b>${esc(SECTOR_EN[top.label] || top.label)}</b>, your dominant sector (${top.pct} %).</div></div>` : ""}
       ${under.map((s, i) => `
       <div class="suggestion-item"><div class="suggestion-icon">${(top && top.pct > a.threshold ? 2 : 1) + i}</div>
-        <div class="suggestion-text">Renforcer <b>${esc(SECTOR_FR[s] || s)}</b>, sous-représenté dans votre portefeuille.</div></div>`).join("")}
+        <div class="suggestion-text">Increase <b>${esc(SECTOR_EN[s] || s)}</b>, underrepresented in your portfolio.</div></div>`).join("")}
       <div class="suggestion-item"><div class="suggestion-icon">i</div>
-        <div class="suggestion-text">Objectif pédagogique : qu'aucun secteur ne dépasse <b>${a.threshold} %</b> du portefeuille investi.</div></div>`
-      : `<div class="empty-state" style="padding:18px;">Passez un premier ordre pour obtenir une analyse.</div>`;
+        <div class="suggestion-text">Educational goal: keep every sector under <b>${a.threshold} %</b> of the invested portfolio.</div></div>`
+      : `<div class="empty-state" style="padding:18px;">Place a first order to get an analysis.</div>`;
   } catch (e) {
-    $("#agent-suggestions").innerHTML = `<div class="empty-state" style="padding:18px;">Analyse indisponible.</div>`;
+    $("#agent-suggestions").innerHTML = `<div class="empty-state" style="padding:18px;">Analysis unavailable.</div>`;
   }
 }
 
-/* --- gestion des conversations : archives en localStorage, par utilisateur --- */
+/* --- conversation management: archives in localStorage, per user --- */
 function archiveKey() { return "finwise-chats-" + (State.user ? State.user.id : "anon"); }
 function loadArchives() {
   try { return JSON.parse(localStorage.getItem(archiveKey()) || "[]"); } catch (e) { return []; }
@@ -1402,12 +1401,12 @@ function saveArchives(list) {
 function welcomeMessage() {
   return {
     role: "assistant",
-    content: `Bonjour ${State.user.name} 👋 Je suis l'agent Finwise. Je surveille votre portefeuille et je peux vous expliquer : le risque, la diversification, le DCA, les intérêts composés, les ETF, les obligations, les crypto-actifs, l'assurance vie, les dividendes, le PER… Posez-moi une question !`,
+    content: `Hello ${State.user.name} 👋 I am the Finwise Agent. I monitor your portfolio and can explain: risk, diversification, DCA, compound interest, ETFs, bonds, crypto-assets, life insurance, dividends, retirement accounts… Ask me anything!`,
   };
 }
 function resetChat() { State.chat = [welcomeMessage()]; }
 function newConversation() {
-  // archive la conversation courante si elle contient au moins un échange
+  // archives current conversation if it contains at least one exchange
   if (State.chat.some(m => m.role === "user")) {
     const archives = loadArchives();
     const firstUser = State.chat.find(m => m.role === "user");
@@ -1417,7 +1416,7 @@ function newConversation() {
       messages: State.chat,
     });
     saveArchives(archives);
-    toast("Conversation archivée ✓", "success");
+    toast("Conversation archived ✓", "success");
   }
   resetChat();
   drawChat();
@@ -1428,17 +1427,17 @@ function drawArchives() {
   if (!el) return;
   const archives = loadArchives();
   if (!archives.length) {
-    el.innerHTML = `<div class="empty-state" style="padding:16px;">Aucune archive. « + Nouvelle » archive la conversation en cours et en démarre une autre.</div>`;
+    el.innerHTML = `<div class="empty-state" style="padding:16px;">No archives. "+ New" archives the current conversation and starts a new one.</div>`;
     return;
   }
   el.innerHTML = archives.map((a, i) => `
     <div class="deposit-row">
       <div style="min-width:0;">
         <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(a.title)}</div>
-        <div class="when">${new Date(a.at).toLocaleDateString("fr-FR")} · ${a.messages.length} messages</div>
+        <div class="when">${new Date(a.at).toLocaleDateString("en-US")} · ${a.messages.length} messages</div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0;">
-        <button class="filter-chip" data-arch-open="${i}">Reprendre</button>
+        <button class="filter-chip" data-arch-open="${i}">Resume</button>
         <button class="filter-chip" data-arch-del="${i}" style="color:var(--negative);">✕</button>
       </div>
     </div>`).join("");
@@ -1447,7 +1446,7 @@ function drawArchives() {
       const archives2 = loadArchives();
       const a = archives2[+b.dataset.archOpen];
       if (!a) return;
-      // la conversation courante est archivée avant de reprendre l'ancienne
+      // current conversation is archived before resuming the old one
       if (State.chat.some(m => m.role === "user")) newConversation();
       const idx = loadArchives().findIndex(x => x.at === a.at);
       const list = loadArchives();
@@ -1459,7 +1458,7 @@ function drawArchives() {
     }));
   el.querySelectorAll("[data-arch-del]").forEach(b =>
     b.addEventListener("click", async () => {
-      const ok = await confirmModal({ title: "Supprimer l'archive", body: "Cette conversation archivée sera définitivement supprimée.", confirmText: "Supprimer" });
+      const ok = await confirmModal({ title: "Delete archive", body: "This archived conversation will be permanently deleted.", confirmText: "Delete" });
       if (!ok) return;
       const list = loadArchives();
       list.splice(+b.dataset.archDel, 1);
@@ -1496,7 +1495,7 @@ async function sendChat() {
     const res = await API.post("/api/agent/chat", { message: msg, history });
     State.chat.push({ role: "assistant", content: res.reply });
   } catch (e) {
-    State.chat.push({ role: "assistant", content: "Désolé, je n'ai pas pu répondre. Réessayez dans un instant." });
+    State.chat.push({ role: "assistant", content: "Sorry, I couldn't answer. Please try again in a moment." });
   }
   $("#chat-send").disabled = false;
   drawChat();
@@ -1504,43 +1503,59 @@ async function sendChat() {
 
 /* ================================================================= RISK = */
 const CONCEPTS = [
-  { t: "Diversification", s: "Ne pas mettre tous ses œufs dans le même panier.",
-    d: "Répartir son capital sur des actifs qui ne réagissent pas tous pareil aux mêmes événements : plusieurs secteurs, plusieurs pays, plusieurs classes d'actifs (actions, obligations, ETF…). C'est l'idée fondatrice de la théorie moderne du portefeuille (Markowitz, 1952, prix Nobel) : en combinant des actifs peu corrélés, on obtient un meilleur couple rendement/risque que chaque actif isolé. Exemple concret : un portefeuille 100% tech peut perdre 30% quand le secteur corrige ; un portefeuille actions + obligations + plusieurs secteurs encaisse le même choc avec une perte bien moindre." },
-  { t: "Concentration", s: "Quand un seul secteur ou pays pèse trop lourd.",
-    d: "Si 70% de votre portefeuille dépend de la technologie, une seule mauvaise nouvelle sur ce secteur touche 70% de votre capital. Idem par pays : être investi uniquement en France vous expose à un choc économique local. La jauge du Dashboard surveille votre plus grosse exposition et la traduit en euros : au-delà de 50% sur un secteur, l'agent vous alerte et chiffre ce que coûterait une correction de -20%." },
-  { t: "La règle des 10 %", s: "Un avertissement, pas une interdiction.",
-    d: "Verser plus de 10% de ses revenus mensuels dans l'investissement réduit la marge de sécurité en cas d'imprévu (panne, perte d'emploi, dépense de santé). Finwise ne l'interdit pas : le serveur exige simplement une confirmation explicite (case à cocher) quand vous dépassez ce seuil — à l'onboarding, en modifiant votre budget ou sur un versement ponctuel. Le principe : la décision vous appartient, mais elle doit être prise en connaissance de cause." },
-  { t: "Volatilité", s: "L'amplitude des variations d'un actif.",
-    d: "Une obligation d'État bouge de ±0,2% par jour, une grande action de ±1-3%, un crypto-actif de ±5-10%. Plus la volatilité est élevée, plus les gains ET les pertes de court terme peuvent être brutaux — et plus il faut un horizon long pour absorber les creux. Point clé : un portefeuille diversifié a une volatilité inférieure à la moyenne de ses composants, parce que les baisses des uns sont amorties par les autres." },
-  { t: "Intérêts composés", s: "Gagner des intérêts sur les intérêts.",
-    d: "Quand vos gains sont réinvestis, ils génèrent à leur tour des gains : la croissance devient exponentielle. 100 € par mois à 5%/an = 24 000 € versés en 20 ans, mais ~41 000 € de capital final. Einstein aurait appelé ça « la huitième merveille du monde ». Les deux leviers : commencer tôt (le temps fait l'essentiel du travail) et ne pas interrompre la capitalisation. Testez vos propres chiffres avec le projecteur ci-dessous." },
-  { t: "Actions, ETF, obligations, crypto", s: "Les grandes classes d'actifs.",
-    d: "Action : une part de propriété d'une entreprise — rendement potentiel élevé, volatilité élevée. ETF : un panier qui réplique un indice (ex : MSCI World = ~1 500 entreprises) — la diversification en un seul achat, avec des frais très bas. Obligation : un prêt à un État ou une entreprise contre un intérêt régulier (le coupon) — peu volatil, c'est l'amortisseur du portefeuille. Crypto-actif : très volatil, non adossé à des revenus — règle courante : pas plus de 5-10% du portefeuille. Vous pouvez acheter chacune de ces classes dans l'onglet Investir." },
-  { t: "Assurance vie & épargne programmée", s: "Verser tous les mois, projeter sur 20 ans.",
-    d: "L'assurance vie est une enveloppe : à l'intérieur, on choisit entre fonds en euros (capital garanti, ~2,5-3%/an) et unités de compte (ETF, actions… non garanties). Son vrai pouvoir vient des versements programmés : 100-200 € prélevés chaque mois, capitalisés sur 15-20 ans avec une fiscalité allégée après 8 ans. Le Livret A reste l'épargne de précaution : garanti et disponible, mais plafonné. Le projecteur ci-dessous simule exactement ce scénario de versements mensuels." },
-  { t: "Risque de perte en capital", s: "Aucune garantie sur les marchés.",
-    d: "Contrairement à un livret réglementé, un portefeuille d'actions n'offre aucune garantie : sa valeur peut passer — et rester longtemps — sous votre mise initiale. Historiquement, les marchés actions ont traversé des baisses de -30 à -50% (2000, 2008, 2020) avant de se reprendre, parfois en plusieurs années. C'est pour cela que l'horizon compte : argent nécessaire sous 2 ans → épargne sécurisée ; 8 ans et plus → les actions ont historiquement toujours fini gagnantes sur ces durées." },
+  {
+    t: "Diversification", s: "Don't put all your eggs in one basket.",
+    d: "Spread your capital across assets that don't react the same way to identical events: multiple sectors, multiple countries, multiple asset classes (stocks, bonds, ETFs…). This is the foundational idea of modern portfolio theory (Markowitz, 1952, Nobel Prize): by combining assets with low correlation, you achieve a better risk/reward balance than with any single asset. Concrete example: a 100% tech portfolio can lose 30% when the sector corrects; a portfolio of stocks + bonds + multiple sectors absorbs the same shock with a much smaller loss."
+  },
+  {
+    t: "Concentration", s: "When a single sector or country weighs too heavily.",
+    d: "If 70% of your portfolio depends on technology, a single bad news item in that sector impacts 70% of your capital. The same applies by country: investing only in one country exposes you to local economic shocks. The Dashboard gauge monitors your largest exposure and translates it into euros: above 50% in a sector, the agent alerts you and quantifies what a -20% correction would cost."
+  },
+  {
+    t: "The 10% Rule", s: "A warning, not a restriction.",
+    d: "Allocating more than 10% of your monthly income to investments reduces your safety margin for unforeseen events (repairs, job loss, medical expenses). Finwise does not forbid it: the server simply requires explicit confirmation (a checkbox) when you exceed this threshold — during onboarding, when editing your budget, or on a one-time deposit. The principle: the choice is yours, but it must be made knowingly."
+  },
+  {
+    t: "Volatility", s: "The amplitude of an asset's price swings.",
+    d: "A government bond moves ±0.2% per day, a large-cap stock ±1-3%, a crypto-asset ±5-10%. The higher the volatility, the more severe short-term gains AND losses can be — and the longer time horizon you need to smooth out the dips. Key point: a diversified portfolio has lower volatility than the average of its individual components because declines in some are cushioned by others."
+  },
+  {
+    t: "Compound Interest", s: "Earning interest on your interest.",
+    d: "When your gains are reinvested, they generate their own gains: growth becomes exponential. €100 per month at 5%/year = €24,000 deposited in 20 years, but ~€41,000 in total final capital. Einstein reportedly called this 'the eighth wonder of the world.' The two levers: start early (time does most of the work) and keep compounding uninterrupted. Test your own numbers with the projector below."
+  },
+  {
+    t: "Stocks, ETFs, Bonds, Crypto", s: "Major asset classes.",
+    d: "Stock: an ownership share in a company — high potential return, high volatility. ETF: a basket that tracks an index (e.g., MSCI World = ~1,500 companies) — instant diversification in a single purchase, with very low fees. Bond: a loan to a government or corporation in exchange for regular interest (the coupon) — low volatility, acts as a portfolio cushion. Crypto-asset: highly volatile, not backed by corporate revenues — common rule: no more than 5-10% of your portfolio. You can buy each of these classes in the Invest tab."
+  },
+  {
+    t: "Life Insurance & Automated Savings", s: "Deposit monthly, project over 20 years.",
+    d: "Life insurance is an investment wrapper: inside, you choose between guaranteed euro funds (~2.5-3%/year) and unit-linked assets (ETFs, stocks… non-guaranteed). Its real strength comes from automated deposits: €100-200 deducted each month, compounded over 15-20 years with favorable tax treatment after 8 years. A basic savings account remains emergency savings: guaranteed and liquid, but capped. The projector below simulates this exact monthly deposit scenario."
+  },
+  {
+    t: "Risk of Capital Loss", s: "No guarantees in financial markets.",
+    d: "Unlike a regulated bank savings account, a stock portfolio offers no guarantee: its value can fall — and remain for a long time — below your initial investment. Historically, stock markets have experienced drops of -30 to -50% (2000, 2008, 2020) before recovering, sometimes taking several years. This is why horizon matters: money needed within 2 years → secure savings; 8 years and beyond → stocks have historically always come out ahead over such durations."
+  },
 ];
 
 const GLOSSARY = [
-  { q: "Cours / Prix", a: "Le prix auquel un actif s'échange à l'instant T, fixé en continu par l'offre et la demande. Sur les fiches type Yahoo Finance : « Previous close » = clôture de la veille, « Open » = premier prix de la séance." },
-  { q: "Capitalisation boursière", a: "La valeur totale d'une entreprise en bourse : cours de l'action × nombre d'actions. On parle de large caps (> 10 Md€), mid caps et small caps — plus la capitalisation est petite, plus le titre est en général volatil et peu liquide." },
-  { q: "PER (Price/Earnings Ratio)", a: "Cours ÷ bénéfice par action : le nombre d'années de bénéfices que vous « payez ». PER < 10 : décoté ou en difficulté ; 15-25 : classique ; > 30 : le marché attend une forte croissance. À comparer toujours au secteur." },
-  { q: "BPA / EPS", a: "Bénéfice Par Action (Earnings Per Share) : le bénéfice net divisé par le nombre d'actions. C'est le « E » du PER, et l'indicateur que les analystes scrutent à chaque publication trimestrielle." },
-  { q: "Dividende & rendement", a: "Part du bénéfice reversée aux actionnaires. Rendement = dividende annuel ÷ cours (3 € sur une action à 100 € = 3%). Méfiance si le rendement paraît trop beau : il cache souvent un cours effondré." },
-  { q: "Volume", a: "Le nombre de titres échangés sur une période. Un volume élevé = beaucoup d'acheteurs et de vendeurs = un prix plus fiable et une revente facile." },
-  { q: "Spread", a: "L'écart entre le meilleur prix d'achat (bid) et le meilleur prix de vente (ask). Plus il est serré, plus l'actif est liquide. Sur les petites valeurs ou cryptos exotiques, le spread peut coûter plusieurs % à lui seul." },
-  { q: "Bêta", a: "La sensibilité d'un titre aux mouvements du marché. Bêta = 1 : bouge comme le marché ; > 1 : amplifie (tech, luxe) ; < 1 : amortit (santé, consommation de base)." },
-  { q: "Ordre au marché / à cours limité", a: "Au marché : exécuté immédiatement au meilleur prix disponible. À cours limité : exécuté seulement si le prix atteint votre limite — vous contrôlez le prix, pas l'exécution. Ce simulateur exécute au marché, au cours serveur." },
-  { q: "Obligation, coupon, échéance", a: "Une obligation est un prêt à un État ou une entreprise. Le coupon est l'intérêt versé régulièrement ; l'échéance (maturité) est la date de remboursement. Le rendement obligataire monte quand le prix de l'obligation baisse, et inversement." },
-  { q: "OAT / Bund / Treasury", a: "Les obligations d'État de référence : OAT pour la France, Bund pour l'Allemagne, Treasury pour les États-Unis. Leur taux à 10 ans sert de référence « sans risque » pour valoriser tous les autres actifs." },
-  { q: "ETF / Tracker", a: "Fonds coté qui réplique un indice (MSCI World, S&P 500, Nasdaq…). Diversification instantanée, frais très bas (TER souvent < 0,3%/an). L'outil de base de l'investisseur débutant." },
-  { q: "Crypto-actif & stablecoin", a: "Actif numérique sur blockchain (Bitcoin, Ethereum…). Très volatil et non adossé à des revenus d'entreprise. Un stablecoin est une crypto conçue pour suivre une monnaie (1 USDT ≈ 1 $) — utile pour les échanges, pas pour le rendement." },
-  { q: "Intérêts composés", a: "Les intérêts produisent eux-mêmes des intérêts dès qu'ils sont réinvestis. C'est la force exponentielle du long terme : à 7%/an, un capital double environ tous les 10 ans (règle des 72 : 72 ÷ taux = années pour doubler)." },
-  { q: "Inflation & rendement réel", a: "Hausse générale des prix qui érode le pouvoir d'achat. Rendement réel = rendement nominal − inflation. Un livret à 2% avec 3% d'inflation vous fait perdre 1% de pouvoir d'achat par an." },
-  { q: "Liquidité", a: "La facilité à vendre rapidement sans perdre de valeur. Une action du CAC 40 se vend en une seconde ; l'immobilier prend des mois. Toujours se demander : « à quel prix pourrai-je réellement récupérer cet argent demain ? »" },
-  { q: "PEA / CTO / Assurance vie", a: "Les trois enveloppes françaises : PEA (actions européennes, exonération après 5 ans, plafond 150 k€), CTO (tout accessible, flat tax 30%), assurance vie (fiscalité allégée après 8 ans, versements programmés). Le choix de l'enveloppe est aussi important que le choix des actifs." },
-  { q: "DCA (Dollar-Cost Averaging)", a: "Investir la même somme à intervalle régulier, quel que soit le niveau du marché. Lisse le prix d'entrée et supprime le stress du « bon moment ». C'est le mode par défaut de votre plan dans l'onglet Budget." },
+  { q: "Price / Quote", a: "The current price at which an asset trades, continuously set by supply and demand. On stock pages (like Yahoo Finance): 'Previous close' = previous day's closing price, 'Open' = first price of the trading session." },
+  { q: "Market Capitalization", a: "The total market value of a company: stock price × total number of shares. Referred to as large caps (> €10B), mid caps, and small caps — the smaller the capitalization, the more volatile and less liquid the stock generally is." },
+  { q: "P/E Ratio (Price-to-Earnings)", a: "Stock price ÷ earnings per share: the number of years of profits you are 'paying' for. P/E < 10: undervalued or troubled; 15-25: average; > 30: market expects strong growth. Always compare within the same sector." },
+  { q: "EPS (Earnings Per Share)", a: "Net income divided by the number of outstanding shares. It is the 'E' in P/E ratio, and the core metric analysts scrutinize during quarterly earnings releases." },
+  { q: "Dividend & Yield", a: "The portion of profits distributed to shareholders. Yield = annual dividend ÷ stock price (a €3 dividend on a €100 stock = 3%). Be cautious if a yield looks too good to be true: it often hides a collapsing stock price." },
+  { q: "Volume", a: "The total number of shares traded over a given period. High volume = high liquidity = more reliable pricing and easier resale." },
+  { q: "Spread", a: "The difference between the highest buy price (bid) and the lowest sell price (ask). The tighter the spread, the higher the liquidity. On small caps or exotic cryptos, the spread alone can cost several percent." },
+  { q: "Beta", a: "A measure of a stock's volatility relative to the overall market. Beta = 1: moves with the market; > 1: amplifies movements (tech, luxury); < 1: buffers movements (healthcare, consumer staples)." },
+  { q: "Market Order vs. Limit Order", a: "Market order: executed immediately at the best available current price. Limit order: executed only if the price reaches your set target — you control price, not execution. This simulator executes market orders at server price." },
+  { q: "Bond, Coupon, Maturity", a: "A bond is a loan to a government or corporation. The coupon is the regular interest paid; maturity is the payback date for the principal. Bond yields rise when bond prices fall, and vice versa." },
+  { q: "Government Bonds (OAT / Bund / Treasury)", a: "Benchmark government bonds: OAT for France, Bund for Germany, Treasury for the US. Their 10-year yield serves as the 'risk-free' reference rate to value all other assets." },
+  { q: "ETF / Index Tracker", a: "A fund traded on an exchange that tracks an index (MSCI World, S&P 500, Nasdaq…). Provides instant diversification at very low expense ratios (often TER < 0.3%/year). The core building block for beginner investors." },
+  { q: "Crypto-Asset & Stablecoin", a: "A digital asset on a blockchain (Bitcoin, Ethereum…). Highly volatile and not backed by corporate revenues. A stablecoin is a crypto designed to track a fiat currency (1 USDT ≈ $1) — useful for transfers, not for yield." },
+  { q: "Compound Interest", a: "Interest generating its own interest whenever it is reinvested. The exponential force of long-term investing: at 7%/year, capital doubles approximately every 10 years (Rule of 72: 72 ÷ rate = years to double)." },
+  { q: "Inflation & Real Return", a: "The general increase in prices that erodes purchasing power. Real Return = Nominal Return − Inflation. A savings account yielding 2% with 3% inflation loses 1% of purchasing power per year." },
+  { q: "Liquidity", a: "How easily an asset can be converted into cash quickly without losing value. Major index stocks sell in a second; real estate takes months. Always ask: 'At what price can I realistically get this money back tomorrow?'" },
+  { q: "Account Types (PEA / Brokerage / Life Insurance)", a: "Common tax wrappers: PEA (European stocks, tax exempt after 5 years), Brokerage/CTO (unrestricted access, flat tax), Life insurance (tax advantages after 8 years, flexible automated plans). Choosing the right wrapper is as crucial as selecting the right assets." },
+  { q: "DCA (Dollar-Cost Averaging)", a: "Investing a fixed amount of money at regular intervals regardless of market performance. Smooths out entry prices and removes the stress of timing the market. This is the default mode for your plan in the Budget tab." },
 ];
 
 function projectionSeries(monthly, ratePct, years) {
@@ -1562,7 +1577,7 @@ function projectorSvg(pts) {
   const line = key => pts.map((p, i) => (i === 0 ? "M" : "L") + x(i).toFixed(1) + "," + y(p[key]).toFixed(1)).join(" ");
   const area = key => line(key) + ` L${x(pts.length - 1)},${H - PADB} L${x(0)},${H - PADB} Z`;
   const labels = pts.filter((p, i) => i > 0 && (pts.length <= 11 || i % Math.ceil(pts.length / 8) === 0 || i === pts.length - 1))
-    .map(p => `<text x="${x(pts.indexOf(p))}" y="${H - 4}" text-anchor="middle" font-size="9.5" fill="#6b6d80">${p.y} an${p.y > 1 ? "s" : ""}</text>`).join("");
+    .map(p => `<text x="${x(pts.indexOf(p))}" y="${H - 4}" text-anchor="middle" font-size="9.5" fill="#6b6d80">${p.y} yr${p.y > 1 ? "s" : ""}</text>`).join("");
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;">
     <path d="${area("total")}" fill="#e3b567" opacity="0.18"/>
     <path d="${area("versed")}" fill="#6fb8b0" opacity="0.30"/>
@@ -1578,11 +1593,11 @@ function renderRisk() {
   const proj = { monthly: 150, rate: 5, years: 20 };
 
   $("#view-root").innerHTML = `<div class="view">
-    <div class="risk-intro"><p>Avant d'investir un seul euro réel, il faut comprendre ce que racontent les chiffres de votre dashboard. Cliquez sur chaque fiche pour le détail, projetez vos versements mensuels avec le simulateur d'intérêts composés, et retrouvez en bas le glossaire des termes que vous croiserez sur les fiches valeurs (Yahoo Finance, Zone Bourse…).</p></div>
+    <div class="risk-intro"><p>Before investing a single real euro, understand what the numbers on your dashboard mean. Click each card for details, project your monthly contributions with the compound interest simulator, and consult the glossary below for terms you will see on stock listings (Yahoo Finance, Bloomberg…).</p></div>
 
-    ${top ? `<div class="budget-alert" style="margin:0 0 20px;">${icon.warn}<div>Illustration avec <b>votre</b> portefeuille : votre plus grosse exposition est <b>${esc(SECTOR_FR[top.label] || top.label)}</b> à <b>${top.pct} %</b> (${fmtEur(top.value)}). Une correction de -20 % de cette poche vous coûterait environ <b>${fmtEur(top.value * 0.2)}</b>.</div></div>` : ""}
+    ${top ? `<div class="budget-alert" style="margin:0 0 20px;">${icon.warn}<div>Illustrated with <b>your</b> portfolio: your largest exposure is <b>${esc(SECTOR_EN[top.label] || top.label)}</b> at <b>${top.pct} %</b> (${fmtEur(top.value)}). A -20% correction in this allocation would cost you roughly <b>${fmtEur(top.value * 0.2)}</b>.</div></div>` : ""}
 
-    <div class="section-label">Concepts à connaître — cliquez pour le détail</div>
+    <div class="section-label">Concepts to Know — click for details</div>
     <div class="concept-grid">
       ${CONCEPTS.map((c, i) => `
       <div class="concept-card clickable" data-concept="${i}">
@@ -1593,28 +1608,28 @@ function renderRisk() {
       </div>`).join("")}
     </div>
 
-    <div class="section-label">Projecteur d'intérêts composés — versements mensuels</div>
+    <div class="section-label">Compound Interest Projector — Monthly Contributions</div>
     <div class="card">
       <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px;">
-        Le scénario type d'une assurance vie ou d'un plan DCA : une somme fixe versée chaque mois, capitalisée année après année. La zone <b style="color:var(--teal)">bleue</b> = ce que vous versez ; la zone <b style="color:var(--accent)">dorée</b> = votre capital total. L'écart entre les deux, ce sont les intérêts composés.</p>
+        A typical long-term investment scenario: a fixed amount deposited every month, compounding year after year. The <b style="color:var(--teal)">blue</b> area = total deposits made; the <b style="color:var(--accent)">gold</b> area = your total portfolio value. The gap between them represents compound interest earned.</p>
       <div class="field-row" style="grid-template-columns:1fr 1fr 1fr;">
-        <div class="field"><label>Versement mensuel : <span id="pj-m-val" class="mono">${proj.monthly} €</span></label>
+        <div class="field"><label>Monthly deposit: <span id="pj-m-val" class="mono">${proj.monthly} €</span></label>
           <input id="pj-m" class="budget-slider" type="range" min="10" max="1000" step="10" value="${proj.monthly}"></div>
-        <div class="field"><label>Rendement annuel : <span id="pj-r-val" class="mono">${proj.rate} %</span></label>
+        <div class="field"><label>Annual return: <span id="pj-r-val" class="mono">${proj.rate} %</span></label>
           <input id="pj-r" class="budget-slider" type="range" min="0" max="12" step="0.5" value="${proj.rate}"></div>
-        <div class="field"><label>Durée : <span id="pj-y-val" class="mono">${proj.years} ans</span></label>
+        <div class="field"><label>Duration: <span id="pj-y-val" class="mono">${proj.years} years</span></label>
           <input id="pj-y" class="budget-slider" type="range" min="1" max="40" step="1" value="${proj.years}"></div>
       </div>
       <div id="pj-chart"></div>
       <div class="budget-stat-row" style="border-bottom:none;margin-top:10px;padding-bottom:0;">
-        <div><div class="tiny-label">Total versé</div><div class="mono budget-figure" style="color:var(--teal);" id="pj-versed">—</div></div>
-        <div><div class="tiny-label">Intérêts gagnés</div><div class="mono budget-figure" style="color:var(--accent);" id="pj-interest">—</div></div>
-        <div><div class="tiny-label">Capital final</div><div class="mono budget-figure" id="pj-total">—</div></div>
+        <div><div class="tiny-label">Total Deposited</div><div class="mono budget-figure" style="color:var(--teal);" id="pj-versed">—</div></div>
+        <div><div class="tiny-label">Interest Earned</div><div class="mono budget-figure" style="color:var(--accent);" id="pj-interest">—</div></div>
+        <div><div class="tiny-label">Final Capital</div><div class="mono budget-figure" id="pj-total">—</div></div>
       </div>
-      <div class="hint" style="margin-top:10px;color:var(--text-tertiary);font-size:11px;">Repères pédagogiques : Livret A ~2-3 %, fonds euros ~2,5-3 %, obligations ~3-4 %, actions monde ~6-8 %/an en moyenne historique — sans garantie et avec de fortes variations d'une année à l'autre.</div>
+      <div class="hint" style="margin-top:10px;color:var(--text-tertiary);font-size:11px;">Educational benchmarks: High-yield savings ~2-3%, government bonds ~3-4%, global equities ~6-8%/year historical average — without guarantee and subject to significant yearly fluctuations.</div>
     </div>
 
-    <div class="section-label">Glossaire des fiches valeurs</div>
+    <div class="section-label">Stock Listings Glossary</div>
     <div class="card">
       ${GLOSSARY.map((g, i) => `
       <div class="glossary-item" data-gl="${i}">
@@ -1623,16 +1638,16 @@ function renderRisk() {
       </div>`).join("")}
     </div>
 
-    <div class="risk-disclaimer"><b>Rappel :</b> Finwise est un simulateur pédagogique. Les scénarios, projections, alertes et suggestions affichés ici et dans toute l'application ne constituent en aucun cas un conseil en investissement réel. Les rendements passés ne préjugent pas des rendements futurs.</div>
+    <div class="risk-disclaimer"><b>Reminder:</b> Finwise is an educational simulator. Scenarios, projections, alerts, and suggestions displayed here and throughout the application do not constitute actual investment advice. Past performance is no guarantee of future results.</div>
   </div>`;
 
-  /* fiches cliquables + glossaire (accordéons, mise à jour en place) */
+  /* clickable cards + glossary (accordions, in-place updates) */
   document.querySelectorAll("[data-concept]").forEach(card =>
     card.addEventListener("click", () => card.classList.toggle("open")));
   document.querySelectorAll("[data-gl]").forEach(item =>
     item.addEventListener("click", () => item.classList.toggle("open")));
 
-  /* projecteur : recalcul en place à chaque slider */
+  /* projector: recalculate in place on slider input */
   const redraw = () => {
     const pts = projectionSeries(proj.monthly, proj.rate, proj.years);
     const last = pts[pts.length - 1];
@@ -1651,47 +1666,47 @@ function renderRisk() {
   };
   bindSlider("#pj-m", "monthly", " €");
   bindSlider("#pj-r", "rate", " %");
-  bindSlider("#pj-y", "years", " ans");
+  bindSlider("#pj-y", "years", " years");
   redraw();
 }
 
-/* ============================================================== COMPTE == */
+/* ============================================================== ACCOUNT == */
 function renderAccount() {
   const u = State.user;
   $("#view-root").innerHTML = `<div class="view">
     <div class="budget-grid">
       <div>
         <div class="card" style="margin-bottom:16px;">
-          <div class="card-title">Profil</div>
-          <div class="field"><label>Prénom</label><input id="ac-name" type="text" value="${esc(u.name)}" maxlength="60"></div>
-          <div class="field"><label>E-mail</label><input id="ac-email" type="email" value="${esc(u.email)}"></div>
-          <div class="hint" style="margin-bottom:12px;">Compte créé le ${esc((u.created_at || "").slice(0, 10))}${u.role === "admin" ? ' · <span class="tag warning">Administrateur</span>' : ""}</div>
-          <button class="btn-primary" id="ac-save-profile">Enregistrer le profil</button>
+          <div class="card-title">Profile</div>
+          <div class="field"><label>First Name</label><input id="ac-name" type="text" value="${esc(u.name)}" maxlength="60"></div>
+          <div class="field"><label>Email</label><input id="ac-email" type="email" value="${esc(u.email)}"></div>
+          <div class="hint" style="margin-bottom:12px;">Account created on ${esc((u.created_at || "").slice(0, 10))}${u.role === "admin" ? ' · <span class="tag warning">Administrator</span>' : ""}</div>
+          <button class="btn-primary" id="ac-save-profile">Save Profile</button>
         </div>
         <div class="card">
-          <div class="card-title">Mot de passe</div>
-          <div class="field"><label>Mot de passe actuel</label><input id="ac-cur" type="password" autocomplete="current-password"></div>
-          <div class="field"><label>Nouveau mot de passe</label><input id="ac-new" type="password" autocomplete="new-password"><div class="hint">8 caractères minimum.</div></div>
-          <button class="btn-primary" id="ac-save-pass">Changer le mot de passe</button>
+          <div class="card-title">Password</div>
+          <div class="field"><label>Current Password</label><input id="ac-cur" type="password" autocomplete="current-password"></div>
+          <div class="field"><label>New Password</label><input id="ac-new" type="password" autocomplete="new-password"><div class="hint">8 characters minimum.</div></div>
+          <button class="btn-primary" id="ac-save-pass">Change Password</button>
         </div>
       </div>
       <div>
         <div class="card" style="margin-bottom:16px;">
-          <div class="card-title">Mes données</div>
+          <div class="card-title">My Data</div>
           <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.65;">
-            Vos données sont stockées côté serveur dans une base SQL (utilisateur, budget, plan DCA, versements, positions, transactions). Le mot de passe n'est jamais conservé en clair — seule une empreinte bcrypt l'est. La session vit dans un cookie httpOnly inaccessible au JavaScript.</p>
+            Your data is stored server-side in a SQL database (user, budget, DCA plan, deposits, positions, transactions). Passwords are never stored in plaintext — only a bcrypt hash is kept. The session relies on an httpOnly cookie inaccessible to JavaScript.</p>
           <div class="budget-stat-row" style="margin-top:14px;border-bottom:none;padding-bottom:0;">
             <div><div class="tiny-label">Positions</div><div class="mono budget-figure">${State.portfolio ? State.portfolio.positions.length : 0}</div></div>
             <div><div class="tiny-label">Transactions</div><div class="mono budget-figure">${State.portfolio ? State.portfolio.transactions.length : 0}</div></div>
-            <div><div class="tiny-label">Versements</div><div class="mono budget-figure">${State.deposits.length}</div></div>
+            <div><div class="tiny-label">Deposits</div><div class="mono budget-figure">${State.deposits.length}</div></div>
           </div>
         </div>
         <div class="card" style="border-color:#e0645a55;">
-          <div class="card-title" style="color:var(--negative);">Zone de danger</div>
+          <div class="card-title" style="color:var(--negative);">Danger Zone</div>
           <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px;">
-            Supprimer votre compte efface définitivement toutes vos données : budget, plan, versements, positions et historique. Cette action est irréversible.</p>
-          <div class="field"><label>Confirmez votre mot de passe</label><input id="ac-del-pass" type="password" autocomplete="current-password"></div>
-          <button class="btn-ghost" id="ac-delete" style="border-color:#e0645a55;color:var(--negative);">Supprimer mon compte</button>
+            Deleting your account permanently erases all your data: budget, plan, deposits, positions, and history. This action is irreversible.</p>
+          <div class="field"><label>Confirm your password</label><input id="ac-del-pass" type="password" autocomplete="current-password"></div>
+          <button class="btn-ghost" id="ac-delete" style="border-color:#e0645a55;color:var(--negative);">Delete My Account</button>
         </div>
       </div>
     </div>
@@ -1703,11 +1718,11 @@ function renderAccount() {
         name: $("#ac-name").value.trim(), email: $("#ac-email").value.trim(),
       });
       State.user = res.user;
-      toast("Profil mis à jour ✓", "success");
+      toast("Profile updated ✓", "success");
       renderAccount();
     } catch (e) {
-      const map = { EMAIL_TAKEN: "Cet e-mail est déjà utilisé.", INVALID_EMAIL: "E-mail invalide.", INVALID_NAME: "Prénom invalide." };
-      toast(map[e.code] || "Erreur lors de la mise à jour.", "error");
+      const map = { EMAIL_TAKEN: "This email is already in use.", INVALID_EMAIL: "Invalid email.", INVALID_NAME: "Invalid first name." };
+      toast(map[e.code] || "Error updating profile.", "error");
     }
   });
 
@@ -1717,32 +1732,32 @@ function renderAccount() {
         currentPassword: $("#ac-cur").value, newPassword: $("#ac-new").value,
       });
       $("#ac-cur").value = ""; $("#ac-new").value = "";
-      toast("Mot de passe modifié ✓", "success");
+      toast("Password changed ✓", "success");
     } catch (e) {
-      const map = { WRONG_PASSWORD: "Mot de passe actuel incorrect.", PASSWORD_TOO_SHORT: "8 caractères minimum." };
-      toast(map[e.code] || "Erreur lors du changement.", "error");
+      const map = { WRONG_PASSWORD: "Incorrect current password.", PASSWORD_TOO_SHORT: "8 characters minimum." };
+      toast(map[e.code] || "Error changing password.", "error");
     }
   });
 
   $("#ac-delete").addEventListener("click", async () => {
     const password = $("#ac-del-pass").value;
-    if (!password) { toast("Confirmez votre mot de passe.", "error"); return; }
+    if (!password) { toast("Confirm your password.", "error"); return; }
     const ok = await confirmModal({
-      title: "Supprimer définitivement le compte",
-      body: `Toutes les données de <b>${esc(State.user.email)}</b> seront effacées : budget, plan DCA, versements, positions, transactions.`,
-      warning: "Cette action est <b>irréversible</b>.",
-      checkLabel: "Je comprends que toutes mes données seront définitivement supprimées.",
-      confirmText: "Supprimer mon compte",
+      title: "Permanently Delete Account",
+      body: `All data for <b>${esc(State.user.email)}</b> will be erased: budget, DCA plan, deposits, positions, transactions.`,
+      warning: "This action is <b>irreversible</b>.",
+      checkLabel: "I understand that all my data will be permanently deleted.",
+      confirmText: "Delete My Account",
     });
     if (!ok) return;
     try {
       await API.request("DELETE", "/api/account", { password });
       stopPolling();
       State.user = null; State.portfolio = null; State.chat = [];
-      toast("Compte supprimé.", "success");
+      toast("Account deleted.", "success");
       renderAuth("login");
     } catch (e) {
-      toast(e.code === "WRONG_PASSWORD" ? "Mot de passe incorrect." : "Erreur lors de la suppression.", "error");
+      toast(e.code === "WRONG_PASSWORD" ? "Incorrect password." : "Error deleting account.", "error");
     }
   });
 }
@@ -1750,14 +1765,14 @@ function renderAccount() {
 /* =============================================================== ADMIN == */
 async function renderAdmin() {
   $("#view-root").innerHTML = `<div class="view"><div class="card">
-    <div class="card-title">Utilisateurs</div>
-    <div id="admin-users"><div class="empty-state">Chargement…</div></div>
+    <div class="card-title">Users</div>
+    <div id="admin-users"><div class="empty-state">Loading…</div></div>
   </div></div>`;
   try {
     const res = await API.get("/api/admin/users");
     drawAdminUsers(res.users);
   } catch (e) {
-    $("#admin-users").innerHTML = `<div class="empty-state"><b>Accès refusé.</b> Cette page est réservée aux administrateurs.</div>`;
+    $("#admin-users").innerHTML = `<div class="empty-state"><b>Access denied.</b> This page is reserved for administrators.</div>`;
   }
 }
 
@@ -1766,7 +1781,7 @@ function drawAdminUsers(users) {
   if (!el) return;
   el.innerHTML = `
     <table class="holdings-table">
-      <thead><tr><th>#</th><th>Utilisateur</th><th>Rôle</th><th>Liquidités</th><th>Versé</th><th>Positions</th><th>Ordres</th><th>Créé le</th><th></th></tr></thead>
+      <thead><tr><th>#</th><th>User</th><th>Role</th><th>Cash</th><th>Deposited</th><th>Positions</th><th>Orders</th><th>Created On</th><th></th></tr></thead>
       <tbody>
         ${users.map(u => `
         <tr>
@@ -1782,31 +1797,31 @@ function drawAdminUsers(users) {
           <td class="mono">${u.trades}</td>
           <td style="font-size:12px;color:var(--text-secondary);">${esc((u.created_at || "").slice(0, 10))}</td>
           <td>${u.id !== State.user.id && u.role !== "admin"
-            ? `<button class="filter-chip" data-admin-del="${u.id}" style="color:var(--negative);">Supprimer</button>` : ""}</td>
+      ? `<button class="filter-chip" data-admin-del="${u.id}" style="color:var(--negative);">Delete</button>` : ""}</td>
         </tr>`).join("")}
       </tbody>
     </table>
     <div class="hint" style="margin-top:12px;color:var(--text-tertiary);font-size:11px;">
-      ${users.length} compte(s). Le premier compte créé est administrateur ; un autre e-mail peut être promu via la variable d'environnement ADMIN_EMAIL. La suppression d'un utilisateur efface en cascade toutes ses données (budget, versements, positions, transactions).</div>`;
+      ${users.length} account(s). The first account created is an administrator; another email can be promoted via the ADMIN_EMAIL environment variable. Deleting a user cascades to erase all their data (budget, deposits, positions, transactions).</div>`;
 
   el.querySelectorAll("[data-admin-del]").forEach(b =>
     b.addEventListener("click", async () => {
       const id = +b.dataset.adminDel;
       const u = users.find(x => x.id === id);
       const ok = await confirmModal({
-        title: "Supprimer cet utilisateur",
-        body: `Le compte <b>${esc(u.email)}</b> et toutes ses données (budget, ${u.positions} position(s), ${u.trades} ordre(s), ${fmtEur(u.deposited)} versés) seront définitivement supprimés.`,
-        warning: "Cette action est <b>irréversible</b>.",
-        checkLabel: "Je confirme la suppression définitive de ce compte.",
-        confirmText: "Supprimer",
+        title: "Delete this user",
+        body: `The account <b>${esc(u.email)}</b> and all associated data (budget, ${u.positions} position(s), ${u.trades} order(s), ${fmtEur(u.deposited)} deposited) will be permanently deleted.`,
+        warning: "This action is <b>irreversible</b>.",
+        checkLabel: "I confirm the permanent deletion of this account.",
+        confirmText: "Delete",
       });
       if (!ok) return;
       try {
         const res = await API.request("DELETE", "/api/admin/users/" + id);
-        toast("Utilisateur supprimé ✓", "success");
+        toast("User deleted ✓", "success");
         drawAdminUsers(res.users);
       } catch (e) {
-        toast("Suppression impossible.", "error");
+        toast("Unable to delete user.", "error");
       }
     }));
 }

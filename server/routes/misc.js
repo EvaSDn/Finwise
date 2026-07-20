@@ -9,8 +9,8 @@ import { analyzePortfolio, agentReply } from "../services/agent.js";
 const router = Router();
 router.use(requireAuth);
 
-/* ---------- NEWS: multi-catégorie (actions, ETF, crypto, obligations,
-   matières premières, devises, entreprises) + flux personnalisé ---------- */
+/* ---------- NEWS: multi-category (stocks, ETF, crypto, bonds,
+   commodities, currencies, companies) + personalized feed ---------- */
 const NEWS_CATEGORY_IDS = new Set(NEWS_CATEGORIES.map(c => c.id));
 const newsLimiter = rateLimit({ windowMs: 60_000, max: 30, standardHeaders: true, legacyHeaders: false });
 

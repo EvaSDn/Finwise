@@ -1,10 +1,10 @@
 /**
- * Market data service — multi-actifs (actions, ETF, crypto, obligations).
- *  - Mode live : Finnhub (FINNHUB_API_KEY) avec caches (quotes 15 s, profils 24 h).
- *    IMPORTANT : le plan gratuit Finnhub ne couvre que les actions US ; pour tout
- *    symbole sans données (actions EU, etc.), on retombe sur un cours simulé
- *    déterministe, marqué { simulated: true } — plus jamais de fiche vide.
- *  - Mode démo : marché simulé déterministe (random walk seedé par symbole).
+ * Market data service — multi-asset (stocks, ETF, crypto, bonds).
+ *  - Live mode: Finnhub (FINNHUB_API_KEY) with caches (quotes 15s, profiles 24h).
+ *    IMPORTANT: the free Finnhub plan only covers US stocks; for any
+ *    symbol without data (EU stocks, etc.), we fall back to a deterministic
+ *    simulated price, marked { simulated: true } — no more empty cards.
+ *  - Demo mode: deterministic simulated market (random walk seeded by symbol).
  */
 const API_KEY = process.env.FINNHUB_API_KEY || "";
 export const DEMO_MODE = !API_KEY;
@@ -61,11 +61,11 @@ export const KNOWN_ASSETS = [
   { symbol: "ASML", name: "ASML Holding", class: "stock", sector: "Technology", country: "NL", base: 712 },
   { symbol: "SAP", name: "SAP SE", class: "stock", sector: "Technology", country: "DE", base: 242 },
   /* --- ETF --- */
-  { symbol: "CW8.PA", name: "Amundi MSCI World — ETF Monde", class: "etf", sector: "Diversifié", country: "Monde", base: 528 },
-  { symbol: "ESE.PA", name: "BNP Paribas S&P 500 — ETF", class: "etf", sector: "Diversifié", country: "US", base: 29 },
-  { symbol: "SPY", name: "SPDR S&P 500 ETF", class: "etf", sector: "Diversifié", country: "US", base: 612 },
+  { symbol: "CW8.PA", name: "Amundi MSCI World ETF", class: "etf", sector: "Diversified", country: "World", base: 528 },
+  { symbol: "ESE.PA", name: "BNP Paribas S&P 500 ETF", class: "etf", sector: "Diversified", country: "US", base: 29 },
+  { symbol: "SPY", name: "SPDR S&P 500 ETF", class: "etf", sector: "Diversified", country: "US", base: 612 },
   { symbol: "QQQ", name: "Invesco Nasdaq-100 ETF", class: "etf", sector: "Technology", country: "US", base: 528 },
-  { symbol: "PAEEM.PA", name: "Amundi Marchés Émergents (ETF)", class: "etf", sector: "Diversifié", country: "Émergents", base: 24 },
+  { symbol: "PAEEM.PA", name: "Amundi Emerging Markets ETF", class: "etf", sector: "Diversified", country: "Emerging", base: 24 },
   /* --- Crypto-actifs --- */
   { symbol: "BTC", name: "Bitcoin", class: "crypto", sector: "Crypto", country: "—", base: 97800, live: "BINANCE:BTCUSDT" },
   { symbol: "ETH", name: "Ethereum", class: "crypto", sector: "Crypto", country: "—", base: 3420, live: "BINANCE:ETHUSDT" },
@@ -74,9 +74,9 @@ export const KNOWN_ASSETS = [
   { symbol: "ADA", name: "Cardano", class: "crypto", sector: "Crypto", country: "—", base: 0.92, live: "BINANCE:ADAUSDT" },
   { symbol: "DOGE", name: "Dogecoin", class: "crypto", sector: "Crypto", country: "—", base: 0.31, live: "BINANCE:DOGEUSDT" },
   /* --- Obligations & taux (produits pédagogiques simulés, faible volatilité) --- */
-  { symbol: "OAT10", name: "OAT France 10 ans (simulé)", class: "bond", sector: "Obligations", country: "FR", base: 98.6, vol: 0.001, yieldPct: 3.1 },
-  { symbol: "BUND10", name: "Bund Allemagne 10 ans (simulé)", class: "bond", sector: "Obligations", country: "DE", base: 99.2, vol: 0.001, yieldPct: 2.4 },
-  { symbol: "UST10", name: "Bon du Trésor US 10 ans (simulé)", class: "bond", sector: "Obligations", country: "US", base: 97.8, vol: 0.001, yieldPct: 4.3 },
+  { symbol: "OAT10", name: "French OAT 10Y (simulated)", class: "bond", sector: "Bonds", country: "FR", base: 98.6, vol: 0.001, yieldPct: 3.1 },
+  { symbol: "BUND10", name: "German Bund 10Y (simulated)", class: "bond", sector: "Bonds", country: "DE", base: 99.2, vol: 0.001, yieldPct: 2.4 },
+  { symbol: "UST10", name: "US Treasury 10Y (simulated)", class: "bond", sector: "Bonds", country: "US", base: 97.8, vol: 0.001, yieldPct: 4.3 },
 ];
 const BY_SYMBOL = new Map(KNOWN_ASSETS.map(s => [s.symbol, s]));
 
@@ -363,7 +363,7 @@ export async function getProfile(symbol) {
   return data;
 }
 
-const CLASS_LABEL = { stock: "Action", etf: "ETF", crypto: "Crypto", bond: "Obligation" };
+const CLASS_LABEL = { stock: "Stock", etf: "ETF", crypto: "Crypto", bond: "Bond" };
 
 // Yahoo Finance (recherche non officielle) : source principale de la
 // recherche live — un seul fournisseur, cohérent avec yahooQuote() (mêmes

@@ -5,7 +5,7 @@ import { requireAuth } from "../middleware/auth.js";
 const router = Router();
 router.use(requireAuth);
 
-/** Réservé aux administrateurs (1er compte créé, ou e-mail = ADMIN_EMAIL). */
+/** Reserved for administrators (first account created, or email = ADMIN_EMAIL). */
 function requireAdmin(req, res, next) {
   const user = findUserById.get(req.userId);
   if (!user || user.role !== "admin") return res.status(403).json({ error: "FORBIDDEN" });
@@ -14,12 +14,12 @@ function requireAdmin(req, res, next) {
 }
 router.use(requireAdmin);
 
-/** Liste des utilisateurs avec statistiques agrégées. */
+/** List users with aggregated statistics. */
 router.get("/users", (req, res) => {
   res.json({ users: listUsers.all() });
 });
 
-/** Suppression d'un utilisateur (jamais soi-même, jamais un autre admin). */
+/** Delete a user (never yourself, never another admin). */
 router.delete("/users/:id", (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isInteger(id)) return res.status(400).json({ error: "INVALID_ID" });

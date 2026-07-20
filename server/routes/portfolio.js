@@ -43,7 +43,7 @@ router.post("/order", async (req, res) => {
   if (typeof symbol !== "string" || !/^[A-Z0-9.\-]{1,12}$/i.test(symbol)) return res.status(400).json({ error: "INVALID_SYMBOL" });
   if (!["buy", "sell"].includes(side)) return res.status(400).json({ error: "INVALID_SIDE" });
   if (typeof qty !== "number" || !isFinite(qty) || qty <= 0 || qty > 100000) return res.status(400).json({ error: "INVALID_QTY" });
-  // fractions d'actions : quantité normalisée à 6 décimales
+  // fractional shares: quantity normalized to 6 decimal places
   const normQty = Math.round(qty * 1e6) / 1e6;
   if (normQty < 0.000001) return res.status(400).json({ error: "INVALID_QTY" });
 

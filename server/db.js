@@ -75,9 +75,9 @@ CREATE TABLE IF NOT EXISTS transactions (
 );
 `);
 
-/* migration douce : ajoute asset_class aux bases créées avant la v1.1 */
-try { db.exec("ALTER TABLE holdings ADD COLUMN asset_class TEXT DEFAULT 'stock'"); } catch { /* déjà présent */ }
-try { db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'"); } catch { /* déjà présent */ }
+/* soft migration: adds asset_class to databases created before v1.1 */
+try { db.exec("ALTER TABLE holdings ADD COLUMN asset_class TEXT DEFAULT 'stock'"); } catch { /* already present */ }
+try { db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'"); } catch { /* already present */ }
 
 /* ---------- users ---------- */
 export const insertUser = db.prepare(
@@ -91,12 +91,12 @@ export const findUserById = db.prepare(
 export const setOnboarded = db.prepare("UPDATE users SET onboarded = 1 WHERE id = ?");
 export const updateCash = db.prepare("UPDATE users SET cash = cash + ? WHERE id = ?");
 
-/* ---------- gestion de compte ---------- */
-export const findUserAuthById = db.prepare("SELECT * FROM users WHERE id = ?"); // usage interne (hash inclus)
+/* ---------- account management ---------- */
+export const findUserAuthById = db.prepare("SELECT * FROM users WHERE id = ?"); // internal use (hash included)
 export const updateUserProfile = db.prepare("UPDATE users SET name = ?, email = ? WHERE id = ?");
 export const updatePasswordHash = db.prepare("UPDATE users SET password_hash = ? WHERE id = ?");
 export const setUserRole = db.prepare("UPDATE users SET role = ? WHERE id = ?");
-export const deleteUserById = db.prepare("DELETE FROM users WHERE id = ?"); // cascade sur toutes les tables liées
+export const deleteUserById = db.prepare("DELETE FROM users WHERE id = ?"); // cascades across all related tables
 
 /* ---------- admin ---------- */
 export const listUsers = db.prepare(`
@@ -178,7 +178,7 @@ export const runOrderTx = db.transaction((userId, symbol, side, qty, price, meta
   if (side === "buy") {
     if (user.cash < total) throw new Error("INSUFFICIENT_CASH");
     setCash.run(+(user.cash - total).toFixed(2), userId);
-    const newShares = Math.round(((held?.shares || 0) + qty) * 1e6) / 1e6; // évite la dérive des flottants
+    const newShares = Math.round(((held?.shares || 0) + qty) * 1e6) / 1e6; // avoids float drift
     const newAvg = held
       ? ((held.avg_cost * held.shares) + total) / newShares
       : price;

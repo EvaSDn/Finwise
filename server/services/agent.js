@@ -1,24 +1,24 @@
 /**
  * AI agent service.
- *  - analyzePortfolio() : analyse déterministe (source de vérité) — concentration,
- *    répartition par secteur / pays / classe d'actif, risque quantifié en euros.
- *  - agentReply() : Claude via l'API Anthropic si ANTHROPIC_API_KEY est présent ;
- *    sinon un moteur de règles ÉTENDU (gratuit) couvrant : risque, diversification,
- *    volatilité, Markowitz, DCA, intérêts composés, ETF, obligations, crypto,
- *    assurance vie, dividendes, PER, inflation, frais, horizon, liquidité…
+ *  - analyzePortfolio() : deterministic analysis (source of truth) — concentration,
+ *    breakdown by sector / country / asset class, risk quantified in monetary value.
+ *  - agentReply() : Claude via Anthropic API if ANTHROPIC_API_KEY is set;
+ *    otherwise an EXTENDED rules engine (free, no key) covering: risk, diversification,
+ *    volatility, Markowitz, DCA, compound interest, ETF, bonds, crypto,
+ *    life insurance, dividends, P/E ratio, inflation, fees, time horizon, liquidity…
  */
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || "";
 const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
-// "gemini-flash-latest" est l'alias maintenu par Google vers le modèle flash
-// courant éligible au plan gratuit — "gemini-2.0-flash" est resté figé en dur
-// dans une version antérieure du projet et son quota gratuit est retombé à 0
-// (modèle daté). Vérifié empiriquement le 2026-07-15 avec une clé réelle.
+// "gemini-flash-latest" is the alias maintained by Google for the current flash model
+// eligible for the free plan — "gemini-2.0-flash" was hardcoded in a previous
+// version and its free quota dropped to 0 (outdated model).
+// Verified empirically on 2026-07-15 with a real key.
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
 const SECTOR_THRESHOLD = 50;
 const CORRECTION_SCENARIO = 0.20;
 
 const KNOWN_SECTORS = ["Technology", "Healthcare", "Finance", "Energy", "Consumer", "Industrials"];
-const CLASS_FR = { stock: "Actions", etf: "ETF", crypto: "Crypto", bond: "Obligations" };
+const CLASS_EN = { stock: "Stocks", etf: "ETF", crypto: "Crypto", bond: "Bonds" };
 
 export function analyzePortfolio(holdings, quotes, cash) {
   const positions = holdings.map(h => {
@@ -48,25 +48,25 @@ export function analyzePortfolio(holdings, quotes, cash) {
 
   const alerts = [];
   const topSector = sectorBreakdown[0];
-  if (topSector && topSector.pct > SECTOR_THRESHOLD && topSector.label !== "Obligations") {
+  if (topSector && topSector.pct > SECTOR_THRESHOLD && topSector.label !== "Bonds") {
     const riskEur = +(topSector.value * CORRECTION_SCENARIO).toFixed(0);
     alerts.push({
       type: "SECTOR_CONCENTRATION", label: topSector.label, pct: topSector.pct, riskEur,
-      message: `Le secteur ${topSector.label} représente ${topSector.pct}% de votre portefeuille investi (seuil de prudence : ${SECTOR_THRESHOLD}%). Une correction de -20% de ce secteur vous coûterait environ ${riskEur} €.`,
+      message: `The ${topSector.label} sector represents ${topSector.pct}% of your invested portfolio (caution threshold: ${SECTOR_THRESHOLD}%). A -20% correction in this sector would cost you approximately $${riskEur}.`,
     });
   }
   const crypto = classBreakdown.find(c => c.label === "crypto");
   if (crypto && crypto.pct > 25) {
     alerts.push({
       type: "CRYPTO_EXPOSURE", label: "Crypto", pct: crypto.pct,
-      message: `Les crypto-actifs représentent ${crypto.pct}% de votre portefeuille (${crypto.value.toFixed(0)} €). Leur volatilité est très supérieure aux actions : des variations de ±20% en quelques jours sont courantes.`,
+      message: `Crypto assets represent ${crypto.pct}% of your portfolio ($${crypto.value.toFixed(0)}). Their volatility is much higher than stocks: swings of ±20% in a few days are common.`,
     });
   }
   const topCountry = countryBreakdown[0];
   if (topCountry && topCountry.pct > 80 && positions.length > 1 && topCountry.label !== "—") {
     alerts.push({
       type: "COUNTRY_CONCENTRATION", label: topCountry.label, pct: topCountry.pct,
-      message: `${topCountry.pct}% de votre capital investi dépend d'un seul pays (${topCountry.label}).`,
+      message: `${topCountry.pct}% of your invested capital depends on a single country (${topCountry.label}).`,
     });
   }
 
@@ -82,19 +82,19 @@ export function analyzePortfolio(holdings, quotes, cash) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Chat — moteur Claude (optionnel)                                    */
+/* Chat — Claude engine (optional)                                     */
 /* ------------------------------------------------------------------ */
 function buildSystemPrompt(a) {
-  return `Tu es l'agent Finwise, un coach pédagogique de gestion de portefeuille pour débutants, intégré à un SIMULATEUR (argent virtuel).
+  return `You are the Finwise agent, a pedagogical portfolio management coach for beginners, integrated into a SIMULATOR (virtual money).
 
-RÈGLES STRICTES :
-- Tu es un outil PÉDAGOGIQUE. Tu ne donnes JAMAIS de conseil d'investissement réel.
-- Tu t'appuies UNIQUEMENT sur les données d'analyse ci-dessous ; tu n'inventes ni chiffres ni actualités.
-- Tu traduis les pourcentages en euros pour rendre le risque concret.
-- Tu peux expliquer : diversification, volatilité, Markowitz, DCA, intérêts composés, ETF, obligations, crypto-actifs, assurance vie, dividendes, PER, inflation, frais, horizon de placement.
-- Réponses courtes (moins de 150 mots), en français, ton bienveillant.
+STRICT RULES:
+- You are an EDUCATIONAL tool. You NEVER give real investment advice.
+- You rely ONLY on the analysis data below; you never invent numbers or news.
+- You translate percentages into dollar amounts to make risk concrete.
+- You can explain: diversification, volatility, Markowitz, DCA, compound interest, ETF, bonds, crypto assets, life insurance, dividends, P/E ratio, inflation, fees, time horizon.
+- Short responses (under 150 words), in English, friendly tone.
 
-DONNÉES D'ANALYSE (source de vérité) :
+ANALYSIS DATA (source of truth):
 ${JSON.stringify({
     invested: a.invested, cash: a.cash,
     sectorBreakdown: a.sectorBreakdown, countryBreakdown: a.countryBreakdown,
@@ -119,7 +119,7 @@ async function claudeReply(message, analysis, history) {
   return (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n").trim();
 }
 
-/* Google Gemini (clé gratuite sur https://aistudio.google.com) */
+/* Google Gemini (free key at https://aistudio.google.com) */
 async function geminiReply(message, analysis, history) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
   const contents = [
@@ -129,12 +129,10 @@ async function geminiReply(message, analysis, history) {
   const body = JSON.stringify({
     system_instruction: { parts: [{ text: buildSystemPrompt(analysis) }] },
     contents,
-    // thinkingBudget: 0 désactive le raisonnement interne des modèles Gemini
-    // récents (2.5+) : sans ça, les tokens de "réflexion" invisible peuvent
-    // consommer tout maxOutputTokens et couper la réponse visible
-    // (observé avec gemini-flash-latest → gemini-3.5-flash, finishReason
-    // MAX_TOKENS avant toute réponse utile). Pas besoin de raisonnement
-    // long pour des réponses pédagogiques courtes et ancrées sur l'analyse.
+    // thinkingBudget: 0 disables internal reasoning on recent Gemini models (2.5+):
+    // without this, "thinking" tokens can consume all maxOutputTokens and cut off
+    // the visible response (observed with gemini-flash-latest, finishReason MAX_TOKENS
+    // before any useful response). No long reasoning needed for short educational answers.
     generationConfig: { maxOutputTokens: 800, temperature: 0.7, thinkingConfig: { thinkingBudget: 0 } },
   });
   const call = () => fetch(url, {
@@ -144,10 +142,10 @@ async function geminiReply(message, analysis, history) {
     signal: AbortSignal.timeout(30_000),
   });
 
-  // Le plan gratuit a un quota par minute bas et peut renvoyer un 429/503
-  // ponctuel (surcharge momentanée) ; deux tentatives supplémentaires avec
-  // pause croissante absorbent la grande majorité des cas réels sans
-  // transformer ça en boucle infinie (le timeout de 30s par appel borne le pire cas).
+  // The free plan has a low per-minute quota and may return a 429/503
+  // (momentary overload); two extra attempts with increasing delay absorb
+  // the vast majority of real cases without turning into an infinite loop
+  // (the 30s timeout per call bounds the worst case).
   let res = await call();
   for (const delayMs of [2000, 4000]) {
     if (res.status !== 429 && res.status !== 503) break;
@@ -161,108 +159,104 @@ async function geminiReply(message, analysis, history) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Chat — moteur de règles étendu (gratuit, sans clé)                  */
+/* Chat — extended rules engine (free, no key required)               */
 /* ------------------------------------------------------------------ */
-const fmt = n => (+n).toLocaleString("fr-FR", { maximumFractionDigits: 0 }) + " €";
+const fmt = n => "$" + (+n).toLocaleString("en-US", { maximumFractionDigits: 0 });
 
-/** Chaque règle : mots-clés (regex) + générateur de réponse ancré sur l'analyse. */
+/** Each rule: keywords (regex) + response generator anchored to the analysis. */
 const RULES = [
   {
-    re: /(risque|perdre|perte|crash|correction|danger)/,
+    re: /(risk|loss|crash|correction|danger|losing|lose)/i,
     fn: a => {
       const top = a.sectorBreakdown[0];
       if (!top) return null;
       const risk = (top.value * CORRECTION_SCENARIO).toFixed(0);
-      return `Concrètement : votre plus grosse exposition est ${top.label} (${top.pct}% du portefeuille investi, soit ${fmt(top.value)}). Si ce secteur corrige de -20% — un scénario vu plusieurs fois par décennie — vous perdriez environ ${fmt(risk)}. C'est ça, le risque de concentration : un pourcentage abstrait devient une somme réelle. Pour le réduire : diversifier entre secteurs, pays et classes d'actifs (actions, obligations, ETF).`;
+      return `Concretely: your biggest exposure is ${top.label} (${top.pct}% of invested portfolio, i.e. ${fmt(top.value)}). If this sector corrects by -20% — a scenario seen several times per decade — you would lose approximately ${fmt(risk)}. That's concentration risk: an abstract percentage becomes a real dollar amount. To reduce it: diversify across sectors, countries, and asset classes (stocks, bonds, ETFs).`;
     },
   },
   {
-    re: /(diversif|équilibr|rééquilibr|répartir|allocation)/,
+    re: /(diversif|rebalance|rebalancing|allocation|spread)/i,
     fn: a => {
       const top = a.sectorBreakdown[0];
       const under = a.underRepresented.slice(0, 3).join(", ");
-      return `Pistes de rééquilibrage (pédagogiques, sur votre portefeuille virtuel) :\n1. ${top ? `Alléger ${top.label}, votre secteur dominant (${top.pct}%)` : "Commencer par 2-3 secteurs différents"}.\n2. Renforcer des secteurs sous-représentés : ${under || "aucun, bravo !"}.\n3. Penser au-delà des actions : un ETF Monde diversifie en un seul achat, une part d'obligations amortit les chocs.\nObjectif simple : qu'aucun secteur ne dépasse ${a.threshold}% — c'est l'esprit de Markowitz.`;
+      return `Rebalancing suggestions (educational, on your virtual portfolio):\n1. ${top ? `Reduce ${top.label}, your dominant sector (${top.pct}%)` : "Start with 2-3 different sectors"}.\n2. Reinforce under-represented sectors: ${under || "none — great job!"}.\n3. Think beyond stocks: a World ETF diversifies in a single purchase, a bond allocation cushions shocks.\nSimple goal: no sector above ${a.threshold}% — that's the spirit of Markowitz.`;
     },
   },
   {
-    re: /(intérêt|interet|composé|compose|capitalis)/,
-    fn: () => `Les intérêts composés, c'est gagner des intérêts sur les intérêts. Exemple : 100 € par mois à 5%/an → au bout de 20 ans vous avez versé 24 000 € mais le capital atteint environ 41 000 €. Les 17 000 € de différence, c'est l'effet boule de neige du temps. Deux leviers : commencer tôt et rester investi. L'onglet « Risques » contient un projecteur interactif pour tester vos propres chiffres.`,
+    re: /(compound|interest|compounding|capitaliz)/i,
+    fn: () => `Compound interest means earning interest on your interest. Example: $100/month at 5%/year → after 20 years you've invested $24,000 but your capital reaches ~$41,000. The $17,000 difference is the snowball effect of time. Two levers: start early and stay invested. The "Risk" tab has an interactive projector to test your own numbers.`,
   },
   {
-    re: /(dca|dollar.?cost|versement|mensuel|lisser)/,
-    fn: () => `Le DCA (Dollar-Cost Averaging) consiste à investir la même somme à intervalle régulier — par exemple 200 € chaque mois — quel que soit le niveau du marché. Avantages : vous lissez votre prix d'entrée (vous achetez plus de parts quand c'est bas, moins quand c'est haut), vous évitez le piège du « mauvais timing », et vous transformez l'investissement en habitude. C'est le mode par défaut de votre plan dans l'onglet Budget.`,
+    re: /(dca|dollar.?cost|monthly|recurring|average|automat)/i,
+    fn: () => `DCA (Dollar-Cost Averaging) means investing the same amount at regular intervals — e.g. $200 every month — regardless of market conditions. Benefits: you smooth your entry price (you buy more shares when it's low, fewer when it's high), you avoid the "bad timing" trap, and you turn investing into a habit. It's the default mode of your plan in the Budget tab.`,
   },
   {
-    re: /(etf|tracker|indice|msci|s&p|sp500|nasdaq)/,
-    fn: () => `Un ETF (ou tracker) est un panier d'actions qui réplique un indice : en achetant une seule part d'un ETF MSCI World, vous détenez un morceau de ~1 500 entreprises de 23 pays. C'est l'outil de diversification le plus simple pour un débutant : frais très bas (~0,2%/an), pas de choix de titres à faire. Essayez d'en chercher un dans l'onglet Investir (ex : CW8, SPY, QQQ).`,
+    re: /(etf|tracker|index|msci|s&p|sp500|nasdaq)/i,
+    fn: () => `An ETF (or tracker) is a basket of stocks that replicates an index: buying a single share of an MSCI World ETF gives you exposure to ~1,500 companies in 23 countries. It's the simplest diversification tool for a beginner: very low fees (~0.2%/year), no stock-picking required. Try searching for one in the Invest tab (e.g. CW8, SPY, QQQ).`,
   },
   {
-    re: /(obligation|bon du trésor|bon du tresor|oat|bund|treasury|coupon|taux)/,
-    fn: () => `Une obligation est un prêt que vous faites à un État ou une entreprise : en échange, elle vous verse un intérêt régulier (le coupon) puis vous rembourse à l'échéance. Une OAT 10 ans, c'est prêter à la France sur 10 ans (~3% par an actuellement). Moins de rendement potentiel que les actions, mais beaucoup moins de volatilité : c'est l'amortisseur d'un portefeuille. Vous pouvez en ajouter dans Investir (OAT10, BUND10, UST10 — versions pédagogiques simulées).`,
+    re: /(bond|treasury|yield|coupon|rate|oat|bund)/i,
+    fn: () => `A bond is a loan you make to a government or company: in return, it pays you a regular interest (the coupon) and repays you at maturity. A 10-year US Treasury means lending to the US for 10 years (~4.3%/year currently). Less potential return than stocks, but much less volatility: it's the shock absorber of a portfolio. You can add bonds in Invest (OAT10, BUND10, UST10 — simulated educational versions).`,
   },
   {
-    re: /(crypto|bitcoin|btc|ethereum|eth|solana|stablecoin|blockchain)/,
+    re: /(crypto|bitcoin|btc|ethereum|eth|solana|stablecoin|blockchain)/i,
     fn: a => {
       const c = a.classBreakdown?.find(x => x.label === "crypto");
-      const held = c ? ` Vous en détenez actuellement ${c.pct}% de votre portefeuille (${fmt(c.value)}).` : "";
-      return `Les crypto-actifs (Bitcoin, Ethereum…) sont une classe d'actifs à part : très volatils (±20% en quelques jours n'est pas rare), non adossés à des revenus d'entreprise, et au cadre réglementaire encore mouvant.${held} Règle pédagogique courante : ne pas y consacrer plus de 5-10% d'un portefeuille, et uniquement de l'argent dont la perte totale serait supportable. Vous pouvez suivre leurs cours en direct dans Investir (BTC, ETH, SOL…).`;
+      const held = c ? ` You currently hold ${c.pct}% of your portfolio in crypto (${fmt(c.value)}).` : "";
+      return `Crypto assets (Bitcoin, Ethereum…) are a separate asset class: highly volatile (±20% in a few days is not uncommon), not backed by company earnings, and in an evolving regulatory landscape.${held} Common rule of thumb: no more than 5-10% of a portfolio, and only money you could afford to lose entirely. You can track live prices in Invest (BTC, ETH, SOL…).`;
     },
   },
   {
-    re: /(assurance.?vie|livret|épargne|epargne|fonds euro)/,
-    fn: () => `L'assurance vie est une enveloppe, pas un placement : à l'intérieur, vous choisissez entre fonds en euros (capital garanti, ~2,5-3%/an) et unités de compte (actions, ETF… non garanties). Son intérêt : fiscalité allégée après 8 ans et versements programmés (ex : 100 €/mois pendant 20 ans). Le Livret A, lui, est l'épargne de précaution : garanti, disponible, mais plafonné et au rendement proche de l'inflation. Utilisez le projecteur de l'onglet Risques pour visualiser 20 ans de versements mensuels avec intérêts composés.`,
+    re: /(life insurance|annuity|savings|emergency fund|money market)/i,
+    fn: () => `A life insurance policy is a wrapper, not an investment: inside, you choose between guaranteed funds (~2.5-3%/year) and unit-linked funds (stocks, ETFs… not guaranteed). Its advantage: tax benefits after 8 years and scheduled contributions (e.g. $100/month for 20 years). An emergency fund, meanwhile, is your safety cushion: guaranteed, available, but low-yielding. Use the projector in the Risk tab to visualize 20 years of monthly contributions with compound interest.`,
   },
   {
-    re: /(dividende|rendement du dividende|payout)/,
-    fn: () => `Le dividende est la part du bénéfice qu'une entreprise reverse à ses actionnaires, souvent chaque année ou chaque trimestre. Le « rendement du dividende » = dividende annuel ÷ cours de l'action (ex : 3 € de dividende sur une action à 100 € = 3%). Attention au piège du rendement trop beau : un rendement de 10% cache souvent un cours qui s'est effondré. Un dividende régulier et en croissance est un meilleur signal qu'un dividende énorme.`,
+    re: /(dividend|yield|payout)/i,
+    fn: () => `A dividend is the share of profit a company returns to shareholders, often annually or quarterly. "Dividend yield" = annual dividend ÷ stock price (e.g. $3 dividend on a $100 stock = 3%). Beware of the high-yield trap: a 10% yield often hides a collapsed stock price. A regular and growing dividend is a better signal than a huge one.`,
   },
   {
-    re: /(per\b|price.?earning|bénéfice|benefice|valorisation|cher|surévalué|sous.?évalué)/,
-    fn: () => `Le PER (Price/Earnings Ratio) = cours de l'action ÷ bénéfice par action. Il dit combien d'années de bénéfices vous « payez » : un PER de 15 signifie 15 ans de bénéfices actuels. En gros : PER < 10 = potentiellement décoté (ou en difficulté), 15-25 = classique, > 30 = le marché attend une forte croissance. À toujours comparer au secteur : la tech a des PER structurellement plus élevés que la banque.`,
+    re: /(p\/e|pe ratio|price.?earning|valuation|overvalued|undervalued|earnings)/i,
+    fn: () => `The P/E ratio (Price/Earnings) = stock price ÷ earnings per share. It tells you how many years of earnings you're "paying for": a P/E of 15 means 15 years of current earnings. Roughly: P/E < 10 = potentially undervalued (or in trouble), 15-25 = typical, > 30 = the market expects strong growth. Always compare to the sector: tech has structurally higher P/Es than banking.`,
   },
   {
-    re: /(inflation|pouvoir d'achat|érosion)/,
-    fn: () => `L'inflation est la hausse générale des prix : à 2% par an, 1 000 € d'aujourd'hui ne vaudront plus que ~820 € de pouvoir d'achat dans 10 ans. C'est LA raison d'investir : de l'argent qui dort sur un compte courant perd de la valeur chaque année. Un placement n'est réellement gagnant que si son rendement dépasse l'inflation — on parle alors de rendement « réel ».`,
+    re: /(inflation|purchasing power|erosion)/i,
+    fn: () => `Inflation is the general rise in prices: at 2%/year, $1,000 today will only have ~$820 of purchasing power in 10 years. That's THE reason to invest: money sitting in a checking account loses value every year. An investment is only truly profitable if its return exceeds inflation — this is called "real return".`,
   },
   {
-    re: /(frais|commission|courtage|ter)/,
-    fn: () => `Les frais sont l'ennemi silencieux du rendement : 2% de frais annuels sur 20 ans amputent environ un tiers de votre capital final ! À surveiller : frais de courtage (par ordre), frais de gestion des fonds (TER — visez < 0,5% pour un ETF), frais d'entrée/sortie, et frais d'enveloppe (assurance vie). Dans ce simulateur il n'y a pas de frais, mais dans la vraie vie, comparez-les toujours avant le rendement promis.`,
+    re: /(fee|commission|expense|ter|cost)/i,
+    fn: () => `Fees are the silent enemy of returns: 2% annual fees over 20 years wipe out about a third of your final capital! Watch out for: brokerage commissions (per trade), fund management fees (TER — aim for < 0.5% for an ETF), entry/exit fees, and account fees. This simulator has no fees, but in real life, always compare them before looking at advertised returns.`,
   },
   {
-    re: /(volatil)/,
-    fn: () => `La volatilité mesure l'amplitude des variations d'un actif. Une action tech peut bouger de ±3% par jour, une obligation d'État de ±0,2%, un crypto-actif de ±10%. Plus la volatilité est élevée, plus les gains ET les pertes à court terme peuvent être brutaux — et plus il faut un horizon long pour absorber les creux. Un portefeuille diversifié a une volatilité inférieure à la moyenne de ses composants : c'est le « free lunch » de Markowitz.`,
+    re: /(volatil)/i,
+    fn: () => `Volatility measures the magnitude of an asset's price swings. A tech stock might move ±3% per day, a government bond ±0.2%, a crypto ±10%. The higher the volatility, the more severe the short-term gains AND losses — and the longer the time horizon needed to absorb downturns. A diversified portfolio has lower volatility than the average of its components: that's Markowitz's "free lunch".`,
   },
   {
-    re: /(markowitz|théorie|theorie|frontière|corrélation|correlation)/,
-    fn: () => `La théorie moderne du portefeuille (Markowitz, 1952, prix Nobel) démontre qu'en combinant des actifs peu corrélés — qui ne montent et ne baissent pas en même temps — on obtient un meilleur couple rendement/risque que chaque actif pris isolément. Exemple : actions + obligations. C'est le fondement mathématique de la diversification, et de toutes les alertes de concentration que je vous envoie.`,
+    re: /(markowitz|modern portfolio|correlation|efficient frontier)/i,
+    fn: () => `Modern Portfolio Theory (Markowitz, 1952, Nobel Prize) proves that by combining assets with low correlation — that don't rise and fall together — you get a better risk/return trade-off than any single asset. Example: stocks + bonds. This is the mathematical foundation of diversification and all the concentration alerts I send you.`,
   },
   {
-    re: /(horizon|long terme|court terme|combien de temps|quand vendre)/,
-    fn: () => `L'horizon de placement, c'est le temps avant d'avoir besoin de votre argent. Règle pédagogique : argent nécessaire sous 2 ans → épargne sécurisée (livret) ; 2-8 ans → mix prudent (obligations + un peu d'actions) ; 8 ans et plus → les actions ont historiquement toujours été gagnantes sur ces durées, malgré les krachs traversés. Plus l'horizon est court, moins on peut se permettre de volatilité.`,
+    re: /(horizon|long.?term|short.?term|when to sell|how long)/i,
+    fn: () => `Your investment horizon is how long before you need your money. Educational rule: money needed in under 2 years → secure savings (money market); 2-8 years → cautious mix (bonds + some stocks); 8 years and more → stocks have historically always been profitable over these periods, despite crashes along the way. The shorter the horizon, the less volatility you can afford.`,
   },
   {
-    re: /(liquidité|liquidite|revendre|vendre vite)/,
-    fn: () => `La liquidité, c'est la facilité à vendre un actif rapidement sans perdre de valeur. Une action du CAC 40 se vend en une seconde ; un bien immobilier prend des mois ; certaines petites capitalisations ou cryptos exotiques n'ont presque pas d'acheteurs. Avant d'investir, demandez-vous toujours : « si j'ai besoin de cet argent demain, à quel prix pourrai-je réellement le récupérer ? »`,
+    re: /(liquid|sell quickly|cash out)/i,
+    fn: () => `Liquidity is how easily you can sell an asset quickly without losing value. A blue-chip stock sells in a second; real estate takes months; some small-caps or exotic cryptos have almost no buyers. Before investing, always ask: "If I need this money tomorrow, at what price can I realistically get it back?"`,
   },
   {
-    re: /(pea|cto|compte.?titres|fiscalité|fiscalite|impôt|impot)/,
-    fn: () => `En France, trois enveloppes principales : le PEA (actions européennes, gains exonérés d'impôt après 5 ans, plafond 150 000 €), le CTO (compte-titres ordinaire : tout est accessible, flat tax de 30% sur les gains) et l'assurance vie (fiscalité allégée après 8 ans). Un débutant commence souvent par un PEA avec un ETF Monde. Rappel : je suis un outil pédagogique, pas un conseiller fiscal !`,
+    re: /(isa|401k|roth|ira|brokerage|tax|account type)/i,
+    fn: () => `Common investment accounts: a Brokerage Account (everything accessible, standard capital gains tax), a Roth IRA (tax-free growth, after-tax contributions, great for long-term), a Traditional IRA (tax-deductible contributions, taxed at withdrawal), and 401(k) (employer-sponsored, pre-tax). Choosing the right account wrapper is as important as choosing the right assets. Note: I'm an educational tool, not a tax advisor!`,
   },
   {
-    re: /(bourse|marché|marche|action c'est quoi|comment ça marche|comment ca marche|débuter|debuter|commencer)/,
-    fn: () => `Une action est une part de propriété d'une entreprise : vous détenez un morceau de ses bénéfices futurs. Son cours varie en continu selon l'offre et la demande. Pour débuter sereinement : 1) se constituer d'abord une épargne de précaution, 2) investir régulièrement (DCA) plutôt que tout d'un coup, 3) diversifier (un ETF Monde fait l'essentiel du travail), 4) n'investir que ce dont on n'a pas besoin avant 8 ans. Ce simulateur est là pour pratiquer tout ça sans risque.`,
-  },
-  {
-    re: /(action[s]? fran[çc]ais|cac ?40|conseil.*action|action.*conseil|quelle[s]? action|action.*(acheter|choisir|d[ée]marr|commenc))/,
-    fn: () => `Je suis un outil pédagogique : je ne peux pas vous recommander d'acheter telle ou telle action précise — ce serait du conseil en investissement réel, hors de mon rôle ici. Ce que je peux faire : vous aider à analyser. Le CAC 40 regroupe les plus grandes capitalisations cotées à Paris ; vous en trouverez plusieurs dans l'onglet Investir (LVMH, L'Oréal, TotalEnergies, Sanofi, BNP Paribas, Airbus, Safran, Schneider Electric…). Pour comparer deux actions, regardez leur secteur, leur PER, leur dividende et leur volatilité — je peux vous expliquer chacun de ces critères. Lequel vous intéresse ?`,
+    re: /(stock market|what is a stock|how does it work|beginner|getting started|start investing)/i,
+    fn: () => `A stock is a share of ownership in a company: you hold a piece of its future profits. Its price fluctuates continuously based on supply and demand. To start well: 1) first build an emergency fund (3-6 months of expenses), 2) invest regularly (DCA) rather than all at once, 3) diversify (a World ETF does most of the work), 4) only invest money you won't need for 8+ years. This simulator is here to practice all of this risk-free.`,
   },
 ];
 
 function ruleBasedReply(message, a) {
   const m = message.toLowerCase();
 
-  if (a.positions.length === 0 && /(portefeuille|position|analyse)/.test(m)) {
-    return "Votre portefeuille est vide pour l'instant. Alimentez votre compte dans Budget puis passez un premier ordre dans Investir — je pourrai ensuite analyser votre diversification. En attendant, posez-moi vos questions : DCA, intérêts composés, ETF, obligations, crypto, PER, dividendes… je suis là pour expliquer.";
+  if (a.positions.length === 0 && /(portfolio|position|analy)/.test(m)) {
+    return "Your portfolio is empty for now. Fund your account in Budget then place your first order in Invest — I'll then be able to analyze your diversification. In the meantime, ask me anything: DCA, compound interest, ETFs, bonds, crypto, P/E ratio, dividends… I'm here to explain.";
   }
   for (const rule of RULES) {
     if (rule.re.test(m)) {
@@ -270,17 +264,17 @@ function ruleBasedReply(message, a) {
       if (out) return out;
     }
   }
-  // Aucune règle ne correspond : on le dit honnêtement plutôt que de renvoyer
-  // un texte générique qui donnerait l'impression que la question a été ignorée.
+  // No rule matched: say so honestly rather than returning a generic response
+  // that would give the impression the question was ignored.
   const alertTxt = a.alerts.length ? a.alerts[0].message
-    : "Aucune alerte de concentration en ce moment.";
+    : "No concentration alerts at the moment.";
   const classes = (a.classBreakdown || []).filter(c => c.label !== "Other")
-    .map(c => `${CLASS_FR[c.label] || c.label} ${c.pct}%`).join(" · ");
-  return `Je n'ai pas de réponse toute prête pour cette question précise (mode "règles" — sans connexion à un moteur IA en ce moment). Voici où en est votre portefeuille en attendant : ${fmt(a.invested)} investis, ${fmt(a.cash)} de liquidités${classes ? ` (${classes})` : ""}. ${alertTxt}\n\nJe peux en revanche vous expliquer en détail : le risque et la diversification, le DCA, les intérêts composés, les ETF, les obligations, les crypto-actifs, l'assurance vie, les dividendes, le PER, l'inflation, les frais, l'horizon de placement, ou les actions françaises/CAC 40. Quel sujet vous intéresse ?`;
+    .map(c => `${CLASS_EN[c.label] || c.label} ${c.pct}%`).join(" · ");
+  return `I don't have a ready-made answer for that specific question (running in "rules" mode — no AI engine connected right now). Here's where your portfolio stands: ${fmt(a.invested)} invested, ${fmt(a.cash)} in cash${classes ? ` (${classes})` : ""}. ${alertTxt}\n\nI can explain in detail: risk and diversification, DCA, compound interest, ETFs, bonds, crypto, life insurance, dividends, P/E ratio, inflation, fees, investment horizon, or stocks. Which topic interests you?`;
 }
 
-/* Priorité des moteurs : Anthropic > Gemini > règles.
-   Chaque échec retombe proprement sur le moteur suivant. */
+/* Engine priority: Anthropic > Gemini > rules.
+   Each failure falls cleanly to the next engine. */
 export async function agentReply(message, analysis, history) {
   if (ANTHROPIC_KEY) {
     try {

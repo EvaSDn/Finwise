@@ -280,7 +280,8 @@ function renderLanding(pricingPeriod = "yearly") {
       <p>Finwise is a full portfolio simulator with live market data, a budget planner and an AI advisor —
         so you can build real investing skills before you put real money on the line.</p>
       <div class="landing-hero-ctas">
-        <button class="btn-primary" id="land-hero-signup">Get Started — €99.99/year</button>
+        <button class="btn-primary" id="land-hero-signup">Get Started — €${LANDING_PRICING_PLANS.yearly.price}/year</button>
+        <button class="btn-ghost landing-hero-price-box" id="land-hero-signup-monthly">or €${LANDING_PRICING_PLANS.monthly.price}/month</button>
         <button class="btn-ghost" id="land-hero-login">I already have an account</button>
       </div>
     </section>
@@ -339,6 +340,7 @@ function renderLanding(pricingPeriod = "yearly") {
   $("#land-login-btn").addEventListener("click", toLogin);
   $("#land-signup-btn").addEventListener("click", toRegister);
   $("#land-hero-signup").addEventListener("click", toRegister);
+  $("#land-hero-signup-monthly").addEventListener("click", toRegister);
   $("#land-hero-login").addEventListener("click", toLogin);
   $("#land-pricing-signup").addEventListener("click", toRegister);
   $("#land-pricing-toggle").querySelectorAll("[data-period]").forEach(b =>

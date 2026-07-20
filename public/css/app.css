@@ -2323,6 +2323,7 @@ select {
 
 .landing-hero-ctas {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   justify-content: center;
 }
@@ -2338,6 +2339,15 @@ select {
   margin: 0;
   padding: 13px 24px;
   font-size: 14px;
+}
+
+.landing-hero-price-box {
+  color: var(--accent);
+  border-color: rgba(227, 181, 103, 0.35);
+}
+
+.landing-hero-price-box:hover {
+  border-color: var(--accent);
 }
 
 .landing-stats-bar {

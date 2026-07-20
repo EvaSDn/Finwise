@@ -1559,6 +1559,18 @@ function loadArchives() {
 function saveArchives(list) {
   try { localStorage.setItem(archiveKey(), JSON.stringify(list.slice(0, 20))); } catch (e) { /* quota */ }
 }
+
+/* --- glossary flashcard mastery: localStorage, per user --- */
+function glossaryKey() { return "finwise-glossary-mastered-" + (State.user ? State.user.id : "anon"); }
+function loadMastered() {
+  try { return JSON.parse(localStorage.getItem(glossaryKey()) || "[]"); } catch (e) { return []; }
+}
+function saveMastered(list) {
+  try { localStorage.setItem(glossaryKey(), JSON.stringify(list)); } catch (e) { /* quota */ }
+}
+function masteredPct(list) {
+  return GLOSSARY.length ? Math.round((list.length / GLOSSARY.length) * 100) : 0;
+}
 function welcomeMessage() {
   return {
     role: "assistant",
@@ -1699,24 +1711,24 @@ const CONCEPTS = [
 ];
 
 const GLOSSARY = [
-  { q: "Price / Quote", a: "The current price at which an asset trades, continuously set by supply and demand. On stock pages (like Yahoo Finance): 'Previous close' = previous day's closing price, 'Open' = first price of the trading session." },
-  { q: "Market Capitalization", a: "The total market value of a company: stock price × total number of shares. Referred to as large caps (> €10B), mid caps, and small caps — the smaller the capitalization, the more volatile and less liquid the stock generally is." },
-  { q: "P/E Ratio (Price-to-Earnings)", a: "Stock price ÷ earnings per share: the number of years of profits you are 'paying' for. P/E < 10: undervalued or troubled; 15-25: average; > 30: market expects strong growth. Always compare within the same sector." },
-  { q: "EPS (Earnings Per Share)", a: "Net income divided by the number of outstanding shares. It is the 'E' in P/E ratio, and the core metric analysts scrutinize during quarterly earnings releases." },
-  { q: "Dividend & Yield", a: "The portion of profits distributed to shareholders. Yield = annual dividend ÷ stock price (a €3 dividend on a €100 stock = 3%). Be cautious if a yield looks too good to be true: it often hides a collapsing stock price." },
-  { q: "Volume", a: "The total number of shares traded over a given period. High volume = high liquidity = more reliable pricing and easier resale." },
-  { q: "Spread", a: "The difference between the highest buy price (bid) and the lowest sell price (ask). The tighter the spread, the higher the liquidity. On small caps or exotic cryptos, the spread alone can cost several percent." },
-  { q: "Beta", a: "A measure of a stock's volatility relative to the overall market. Beta = 1: moves with the market; > 1: amplifies movements (tech, luxury); < 1: buffers movements (healthcare, consumer staples)." },
-  { q: "Market Order vs. Limit Order", a: "Market order: executed immediately at the best available current price. Limit order: executed only if the price reaches your set target — you control price, not execution. This simulator executes market orders at server price." },
-  { q: "Bond, Coupon, Maturity", a: "A bond is a loan to a government or corporation. The coupon is the regular interest paid; maturity is the payback date for the principal. Bond yields rise when bond prices fall, and vice versa." },
-  { q: "Government Bonds (OAT / Bund / Treasury)", a: "Benchmark government bonds: OAT for France, Bund for Germany, Treasury for the US. Their 10-year yield serves as the 'risk-free' reference rate to value all other assets." },
-  { q: "ETF / Index Tracker", a: "A fund traded on an exchange that tracks an index (MSCI World, S&P 500, Nasdaq…). Provides instant diversification at very low expense ratios (often TER < 0.3%/year). The core building block for beginner investors." },
-  { q: "Crypto-Asset & Stablecoin", a: "A digital asset on a blockchain (Bitcoin, Ethereum…). Highly volatile and not backed by corporate revenues. A stablecoin is a crypto designed to track a fiat currency (1 USDT ≈ $1) — useful for transfers, not for yield." },
-  { q: "Compound Interest", a: "Interest generating its own interest whenever it is reinvested. The exponential force of long-term investing: at 7%/year, capital doubles approximately every 10 years (Rule of 72: 72 ÷ rate = years to double)." },
-  { q: "Inflation & Real Return", a: "The general increase in prices that erodes purchasing power. Real Return = Nominal Return − Inflation. A savings account yielding 2% with 3% inflation loses 1% of purchasing power per year." },
-  { q: "Liquidity", a: "How easily an asset can be converted into cash quickly without losing value. Major index stocks sell in a second; real estate takes months. Always ask: 'At what price can I realistically get this money back tomorrow?'" },
-  { q: "Account Types (PEA / Brokerage / Life Insurance)", a: "Common tax wrappers: PEA (European stocks, tax exempt after 5 years), Brokerage/CTO (unrestricted access, flat tax), Life insurance (tax advantages after 8 years, flexible automated plans). Choosing the right wrapper is as crucial as selecting the right assets." },
-  { q: "DCA (Dollar-Cost Averaging)", a: "Investing a fixed amount of money at regular intervals regardless of market performance. Smooths out entry prices and removes the stress of timing the market. This is the default mode for your plan in the Budget tab." },
+  { q: "Price / Quote", a: "The price an asset is trading at right now. 'Previous close' = yesterday's final price. 'Open' = today's first price." },
+  { q: "Market Capitalization", a: "A company's total value: share price × number of shares. Big companies (> €10B) are 'large caps'; smaller ones are riskier and harder to trade." },
+  { q: "P/E Ratio (Price-to-Earnings)", a: "Share price ÷ profit per share — how many years of profit you're paying for. Low (< 10) can mean cheap or in trouble; high (> 30) means investors expect strong growth." },
+  { q: "EPS (Earnings Per Share)", a: "A company's profit divided by its number of shares. It's the 'E' in the P/E ratio, and a key number each earnings season." },
+  { q: "Dividend & Yield", a: "The part of profit paid out to shareholders. Yield = yearly dividend ÷ share price (a €3 dividend on a €100 share = 3%). A very high yield can be a warning sign, not a bargain." },
+  { q: "Volume", a: "How many shares were traded over a period. Higher volume means it's easier to buy or sell without moving the price." },
+  { q: "Spread", a: "The gap between the buying price and the selling price. A smaller spread means cheaper, easier trading." },
+  { q: "Beta", a: "How much a stock moves compared to the overall market. Beta = 1: moves with the market; above 1: swings more; below 1: swings less." },
+  { q: "Market Order vs. Limit Order", a: "A market order buys or sells right away at the current price. A limit order only executes at a price you set. This simulator uses market orders." },
+  { q: "Bond, Coupon, Maturity", a: "A bond is a loan you give to a government or company. The coupon is the interest you're paid. Maturity is when you get your money back." },
+  { q: "Government Bonds (OAT / Bund / Treasury)", a: "Bonds issued by governments — OAT (France), Bund (Germany), Treasury (US). Their yields are treated as the safest reference rate in the market." },
+  { q: "ETF / Index Tracker", a: "A fund that tracks an index (like the S&P 500), letting you invest in many companies at once for a low fee. A great starting point for beginners." },
+  { q: "Crypto-Asset & Stablecoin", a: "A digital asset like Bitcoin or Ethereum — very volatile, with no company profits behind it. A stablecoin tries to stay pegged to a currency, like $1." },
+  { q: "Compound Interest", a: "When your gains start earning their own gains. It's what makes long-term investing grow faster over time — Einstein reportedly called it the 'eighth wonder of the world'." },
+  { q: "Inflation & Real Return", a: "Inflation makes things cost more over time. Real return = what you earned minus inflation. Earning 2% while inflation is 3% means you're actually losing value." },
+  { q: "Liquidity", a: "How fast you can turn an asset into cash without losing value. Stocks: almost instantly. Real estate: months." },
+  { q: "Account Types (PEA / Brokerage / Life Insurance)", a: "Different accounts have different tax rules: PEA (tax-free after 5 years, EU stocks only), Brokerage (flexible, taxed), Life Insurance (tax perks after 8 years). Picking the right one matters as much as picking the right investments." },
+  { q: "DCA (Dollar-Cost Averaging)", a: "Investing the same amount on a regular schedule, no matter what the market is doing. Removes the stress of trying to time the market — the default plan in your Budget tab." },
 ];
 
 function projectionSeries(monthly, ratePct, years) {
@@ -1803,13 +1815,26 @@ async function renderRisk() {
       <div class="hint" style="margin-top:10px;color:var(--text-tertiary);font-size:11px;">Educational benchmarks: High-yield savings ~2-3%, government bonds ~3-4%, global equities ~10%/year historical average — without guarantee and subject to significant yearly fluctuations.</div>
     </div>
 
-    <div class="section-label">Stock Listings Glossary</div>
+    <div class="section-label">Stock Listings Glossary — Flashcards</div>
     <div class="card">
-      ${GLOSSARY.map((g, i) => `
-      <div class="glossary-item" data-gl="${i}">
-        <div class="glossary-q"><span>${g.q}</span><span class="chev">+</span></div>
-        <div class="glossary-a">${g.a}</div>
-      </div>`).join("")}
+      <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:6px;">
+        Click a card to flip it, then hit <b>Got it ✓</b> once you know the term. Master them all to fill the bar.</p>
+      <div class="glossary-progress-row">
+        <div class="glossary-progress-bar"><div class="glossary-progress-fill" id="gl-progress-fill" style="width:${masteredPct(loadMastered())}%;"></div></div>
+        <div class="glossary-progress-label" id="gl-progress-label">${loadMastered().length} / ${GLOSSARY.length} mastered</div>
+      </div>
+      <div class="glossary-grid" id="gl-grid">
+        ${GLOSSARY.map((g, i) => `
+        <div class="flashcard${loadMastered().includes(i) ? " mastered" : ""}" data-gl="${i}">
+          <div class="flashcard-inner">
+            <div class="flashcard-front"><span>${g.q}</span></div>
+            <div class="flashcard-back">
+              <div class="flashcard-back-text">${g.a}</div>
+              <button type="button" class="btn-ghost flashcard-master-btn" data-master="${i}">${loadMastered().includes(i) ? "✓ Mastered" : "Got it ✓"}</button>
+            </div>
+          </div>
+        </div>`).join("")}
+      </div>
     </div>
 
     <div class="risk-disclaimer"><b>Reminder:</b> Finwise is an educational simulator. Scenarios, projections, alerts, and suggestions displayed here and throughout the application do not constitute actual investment advice. Past performance is no guarantee of future results.</div>
@@ -1818,8 +1843,25 @@ async function renderRisk() {
   /* clickable cards + glossary (accordions, in-place updates) */
   document.querySelectorAll("[data-concept]").forEach(card =>
     card.addEventListener("click", () => card.classList.toggle("open")));
-  document.querySelectorAll("[data-gl]").forEach(item =>
-    item.addEventListener("click", () => item.classList.toggle("open")));
+  document.querySelectorAll("[data-gl]").forEach(card =>
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("[data-master]")) return; // handled separately below
+      card.classList.toggle("flipped");
+    }));
+  document.querySelectorAll("[data-master]").forEach(btn =>
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const i = +btn.dataset.master;
+      const mastered = loadMastered();
+      if (!mastered.includes(i)) {
+        mastered.push(i);
+        saveMastered(mastered);
+        btn.closest(".flashcard").classList.add("mastered");
+        btn.textContent = "✓ Mastered";
+        $("#gl-progress-fill").style.width = masteredPct(mastered) + "%";
+        $("#gl-progress-label").textContent = mastered.length + " / " + GLOSSARY.length + " mastered";
+      }
+    }));
 
   /* projector: recalculate in place on slider input */
   const redraw = () => {

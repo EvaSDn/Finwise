@@ -2089,45 +2089,110 @@ select {
   display: block;
 }
 
-.glossary-item {
-  border-bottom: 1px solid var(--border);
-  padding: 14px 2px;
+.glossary-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.glossary-progress-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.glossary-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), var(--accent));
+  transition: width .35s ease;
+}
+
+.glossary-progress-label {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.glossary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.flashcard {
+  height: 160px;
+  perspective: 1200px;
   cursor: pointer;
 }
 
-.glossary-item:last-child {
-  border-bottom: none;
+.flashcard-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform .5s ease;
+  transform-style: preserve-3d;
 }
 
-.glossary-q {
+.flashcard.flipped .flashcard-inner {
+  transform: rotateY(180deg);
+}
+
+.flashcard-front, .flashcard-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  padding: 14px;
+  background: var(--surface-2);
+}
+
+.flashcard-front {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   font-size: 13px;
   font-weight: 600;
 }
 
-.glossary-q .chev {
-  transition: transform .2s ease;
-  color: var(--text-tertiary);
-  font-size: 16px;
+.flashcard-back {
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.glossary-item.open .glossary-q .chev {
-  transform: rotate(45deg);
-}
-
-.glossary-a {
-  display: none;
-  font-size: 12.5px;
+.flashcard-back-text {
+  font-size: 11.5px;
   color: var(--text-secondary);
-  line-height: 1.6;
-  margin-top: 9px;
-  padding-right: 24px;
+  line-height: 1.5;
+  overflow-y: auto;
 }
 
-.glossary-item.open .glossary-a {
-  display: block;
+.flashcard-master-btn {
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 5px 10px;
+  font-size: 11px;
+}
+
+.flashcard.mastered .flashcard-front,
+.flashcard.mastered .flashcard-back {
+  border-color: var(--teal);
+}
+
+.flashcard.mastered .flashcard-front::after {
+  content: "✓";
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  color: var(--teal);
+  font-weight: 700;
 }
 
 .card-title .filter-chip {

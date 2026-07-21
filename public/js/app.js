@@ -328,7 +328,7 @@ function renderLanding(pricingPeriod = "yearly") {
         </div>
         <div class="landing-price">€${LANDING_PRICING_PLANS[pricingPeriod].price}<span> ${LANDING_PRICING_PLANS[pricingPeriod].suffix}</span></div>
         ${LANDING_PRICING_PLANS[pricingPeriod].note ? `<div class="landing-price-note">${esc(LANDING_PRICING_PLANS[pricingPeriod].note)}</div>` : `<div class="landing-price-note" style="visibility:hidden;">placeholder</div>`}
-        <div class="landing-pricing-benefit">🧠 Priority AI coaching on your actual trades — not generic tips.</div>
+        <div class="landing-pricing-benefit">Build stronger financial knowledge with personalized educational insights.</div>
         <div class="landing-pricing-list">
           ${LANDING_PRICING_ITEMS.map(t => `<div class="landing-pricing-item">${icon.check}${esc(t)}</div>`).join("")}
         </div>

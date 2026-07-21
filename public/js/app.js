@@ -240,6 +240,15 @@ const LANDING_FEATURES = [
   { icon: icon.shield, title: "Risk Profile", body: "Understand your risk exposure with a live gauge and personalized insights as your portfolio evolves." },
 ];
 
+const LOGO_MARK_SVG = `<svg viewBox="0 0 100 100" style="width:62%;height:62%;display:block;" xmlns="http://www.w3.org/2000/svg">
+  <rect x="24" y="22" width="11" height="54" rx="4" fill="#181205"/>
+  <rect x="24" y="22" width="34" height="10.5" rx="4" fill="#181205"/>
+  <rect x="24" y="44.5" width="25" height="10" rx="4" fill="#181205"/>
+  <polyline points="58,80 68,80 74,68 82,52" fill="none" stroke="#181205" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="82" cy="52" r="5.6" fill="#181205"/>
+  <circle cx="82" cy="52" r="2.3" fill="#e3b567"/>
+</svg>`;
+
 const LANDING_PRICING_ITEMS = [
   "Full portfolio simulator, unlimited trades",
   "Live market data & real-time news feed",
@@ -258,7 +267,7 @@ function renderLanding(pricingPeriod = "yearly") {
   <div class="landing-page">
     <header class="landing-header">
       <div class="auth-brand" style="cursor:pointer;margin-bottom:0;" id="land-brand-btn">
-        <div class="brand-mark">F</div>
+        <div class="brand-mark">${LOGO_MARK_SVG}</div>
         <div>
           <div class="auth-brand-name">Finwise</div>
           <div class="auth-brand-tag">Educational Simulator</div>
@@ -319,7 +328,7 @@ function renderLanding(pricingPeriod = "yearly") {
         </div>
         <div class="landing-price">€${LANDING_PRICING_PLANS[pricingPeriod].price}<span> ${LANDING_PRICING_PLANS[pricingPeriod].suffix}</span></div>
         ${LANDING_PRICING_PLANS[pricingPeriod].note ? `<div class="landing-price-note">${esc(LANDING_PRICING_PLANS[pricingPeriod].note)}</div>` : `<div class="landing-price-note" style="visibility:hidden;">placeholder</div>`}
-        <div class="landing-pricing-benefit">Boost your financial knowledges — personalized educational insights to help you become smarter with your money.</div>
+        <div class="landing-pricing-benefit">🧠 Priority AI coaching on your actual trades — not generic tips.</div>
         <div class="landing-pricing-list">
           ${LANDING_PRICING_ITEMS.map(t => `<div class="landing-pricing-item">${icon.check}${esc(t)}</div>`).join("")}
         </div>
@@ -331,6 +340,7 @@ function renderLanding(pricingPeriod = "yearly") {
       <div class="landing-footer-disclaimer">Finwise is an educational simulator. Portfolios, trades and
         balances are entirely virtual — nothing here constitutes financial advice or a real brokerage account.</div>
       <div>© ${new Date().getFullYear()} Finwise</div>
+      <div class="landing-footer-team">Built by Louise Grosdhomme, Christina Lopes, Clara Sion Saunier, Alida Nana Sunji Kouanang &amp; Eva Doumbe Ngangue — EPITA</div>
     </footer>
   </div>`;
 
@@ -357,7 +367,7 @@ function renderAuth(mode = "login") {
   <div class="auth-screen">
     <div class="auth-card">
       <div class="auth-brand" style="cursor:pointer;" id="auth-brand-btn">
-        <div class="brand-mark">F</div>
+        <div class="brand-mark">${LOGO_MARK_SVG}</div>
         <div>
           <div class="auth-brand-name">Finwise</div>
           <div class="auth-brand-tag">Educational Simulator</div>
@@ -429,7 +439,7 @@ function renderOnboarding() {
     <div class="auth-screen">
       <div class="auth-card wide">
         <div class="auth-brand">
-          <div class="brand-mark">F</div>
+          <div class="brand-mark">${LOGO_MARK_SVG}</div>
           <div><div class="auth-brand-name">Welcome, ${esc(State.user.name)}</div>
           <div class="auth-brand-tag">Budget Setup</div></div>
         </div>
@@ -561,7 +571,7 @@ async function enterApp() {
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand" style="cursor:pointer;" id="sidebar-brand-btn">
-        <div class="brand-mark" style="width:30px;height:30px;border-radius:9px;font-size:16px;">F</div>
+        <div class="brand-mark" style="width:30px;height:30px;border-radius:9px;">${LOGO_MARK_SVG}</div>
         <div><div class="brand-name">Finwise</div><div class="brand-tag">Simulator</div></div>
       </div>
       <nav class="nav" id="nav"></nav>

@@ -2141,7 +2141,8 @@ select {
   transform: rotateY(180deg);
 }
 
-.flashcard-front, .flashcard-back {
+.flashcard-front,
+.flashcard-back {
   position: absolute;
   inset: 0;
   backface-visibility: hidden;
@@ -2205,7 +2206,7 @@ select {
  ============================================================ */
 .landing-page {
   min-height: 100vh;
-  background: 
+  background:
     radial-gradient(circle at 10% 20%, rgba(227, 181, 103, 0.06), transparent 40%),
     radial-gradient(circle at 90% 80%, rgba(111, 184, 176, 0.05), transparent 45%),
     #0d0f17;
@@ -2583,17 +2584,26 @@ select {
   line-height: 1.6;
 }
 
+.landing-footer-team {
+  margin-top: 6px;
+  color: var(--text-tertiary);
+  opacity: 0.8;
+}
+
 @media (max-width: 768px) {
   .landing-hero h1 {
     font-size: 40px;
   }
+
   .landing-stats-container {
     grid-template-columns: repeat(2, 1fr);
     gap: 24px;
   }
+
   .landing-features-grid {
     grid-template-columns: 1fr;
   }
+
   .landing-nav {
     display: none;
   }

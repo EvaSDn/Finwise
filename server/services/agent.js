@@ -195,8 +195,80 @@ const RULES = [
     fn: () => `An ETF (or tracker) is a basket of stocks that replicates an index: buying a single share of an MSCI World ETF gives you exposure to ~1,500 companies in 23 countries. It's the simplest diversification tool for a beginner: very low fees (~0.2%/year), no stock-picking required. Try searching for one in the Invest tab (e.g. CW8, SPY, QQQ).`,
   },
   {
+    re: /(yield curve|credit rating|credit spread|investment grade|junk bond|high.?yield bond)/i,
+    fn: () => `The yield curve plots bond yields against their maturities. Normally it slopes upward (longer maturity = higher yield, more uncertainty to compensate). An inverted curve (short-term yields above long-term) has historically preceded recessions. Credit rating (S&P, Moody's, Fitch) grades an issuer's default risk: "investment grade" (BBB-/Baa3 and above) is considered safer; below that is "junk"/high-yield — riskier, so it must offer a higher yield (the "credit spread" over a comparable Treasury) to attract buyers.`,
+  },
+  {
+    re: /(quantitative easing|\bqe\b|monetary policy|central bank rate|federal reserve|\bfed\b rate|interest rate hike|rate cut)/i,
+    fn: () => `Central banks (e.g. the Fed, ECB) steer the economy mainly via interest rates: raising rates cools inflation but slows growth and borrowing; cutting rates stimulates growth but risks inflation. Quantitative Easing (QE) is an extra tool used when rates are already near zero: the central bank buys bonds to inject liquidity directly into the financial system, pushing long-term yields down and asset prices up. It expanded massively after 2008 and 2020. QT (Quantitative Tightening) is the reverse — shrinking that balance sheet, which tends to pressure asset prices down.`,
+  },
+  {
     re: /(bond|treasury|yield|coupon|rate|oat|bund)/i,
     fn: () => `A bond is a loan you make to a government or company: in return, it pays you a regular interest (the coupon) and repays you at maturity. A 10-year US Treasury means lending to the US for 10 years (~4.3%/year currently). Less potential return than stocks, but much less volatility: it's the shock absorber of a portfolio. You can add bonds in Invest (OAT10, BUND10, UST10 — simulated educational versions).`,
+  },
+  {
+    re: /(proof of work|proof.?of.?stake|\bpow\b|\bpos\b|consensus mechanism|mining vs staking|\bvalidator(s)?\b|nonce|byzantine fault)/i,
+    fn: () => `Consensus mechanisms let a decentralized network agree on the state of the ledger without a central authority. Proof of Work (Bitcoin): miners race to solve a computational puzzle; the winner adds the block and earns the reward — secure but energy-intensive. Proof of Stake (Ethereum since "The Merge" in 2022): validators lock up ("stake") capital as collateral and are chosen to propose/attest blocks proportionally to their stake; dishonest behavior gets "slashed" (a portion of the stake destroyed). PoS uses ~99% less energy than PoW but concentrates influence with whoever holds the most capital — a different trade-off, not a free lunch.`,
+  },
+  {
+    re: /(smart contract)/i,
+    fn: () => `A smart contract is self-executing code deployed on a blockchain (e.g. Ethereum, Solidity): if condition X is met, action Y happens automatically, with no intermediary. It powers DeFi lending, DEXs, NFTs. Strengths: transparent, tamper-resistant once deployed, no counterparty needed. Risks: code is law — a bug is exploitable and usually irreversible (e.g. The DAO hack, 2016, ~$60M drained). Audits reduce but never eliminate this risk.`,
+  },
+  {
+    re: /(defi\b|decentralized finance|automated market maker|\bamm\b|liquidity pool|impermanent loss|yield farm(ing)?|liquidity mining)/i,
+    fn: () => `DeFi (Decentralized Finance) recreates banking services (lending, trading, savings) with smart contracts instead of banks. Key building block: the AMM (Automated Market Maker, e.g. Uniswap) — instead of an order book, liquidity providers deposit a pair of assets into a pool and prices move along a formula (e.g. x·y=k) as trades occur. Providers earn trading fees but face impermanent loss: if the pool's assets move apart in price, withdrawing can be worth less than just holding them. Yield farming means chasing the highest returns across these pools — often layered with extra token incentives and extra risk.`,
+  },
+  {
+    re: /(\bnft\b|non.?fungible)/i,
+    fn: () => `An NFT (Non-Fungible Token) is a unique, non-interchangeable token on a blockchain, typically pointing to a digital (or physical) asset — art, collectibles, in-game items, real-estate titles. "Non-fungible" means one NFT ≠ another NFT, unlike Bitcoin where 1 BTC = 1 BTC (fungible). It proves provenance and ownership on-chain, but the underlying file itself is usually stored off-chain (IPFS or a server), which is a common critique. Value is purely driven by scarcity + demand — no cash flow backs it, so it's pure speculation, not an investment in the traditional sense.`,
+  },
+  {
+    re: /(gas fee|gas price|gwei|transaction fee.*(chain|network)|network fee.*(eth|blockchain))/i,
+    fn: () => `Gas is the fee paid to compensate the network (miners/validators) for processing a transaction or executing a smart contract, denominated in "gwei" (10⁻⁹ ETH on Ethereum). It scales with computational complexity and network congestion: a simple transfer costs little, a complex DeFi interaction costs more, and fees spike when demand is high (like surge pricing). It's a real cost that erodes returns on small or frequent transactions — one reason Layer-2 networks exist.`,
+  },
+  {
+    re: /(halving|hard fork|soft fork|chain split)/i,
+    fn: () => `A fork is a change to a blockchain's protocol rules. A soft fork is backward-compatible (old nodes still validate new blocks). A hard fork is not — it splits the chain in two if not everyone upgrades (e.g. Bitcoin/Bitcoin Cash in 2017, Ethereum/Ethereum Classic in 2016). Halving is specific to Bitcoin: roughly every 4 years, the block reward miners earn is cut in half (currently 3.125 BTC), reducing new supply issuance — a mechanism baked into its fixed 21M supply cap.`,
+  },
+  {
+    re: /(private key|seed phrase|cold wallet|hot wallet|self.?custody|hardware wallet|not your keys)/i,
+    fn: () => `A wallet doesn't "store" crypto — it stores the private key that proves you control assets recorded on the blockchain. Hot wallet: connected to the internet (app, exchange) — convenient, more exposed. Cold wallet: offline (hardware device, paper) — safer, less convenient. "Not your keys, not your coins": if you leave assets on an exchange, the exchange controls the keys and can freeze or lose them (e.g. FTX, 2022). Self-custody removes that counterparty risk but shifts full responsibility — and an irreversible loss — onto you if the seed phrase is lost.`,
+  },
+  {
+    re: /(\bdao\b|decentralized autonomous organization)/i,
+    fn: () => `A DAO (Decentralized Autonomous Organization) is an organization governed by rules encoded in smart contracts and by token-holder votes, rather than a traditional management hierarchy. Token holders propose and vote on decisions (treasury spending, protocol upgrades); execution is often automatic. Benefits: transparent, permissionless participation. Real-world friction: low voter turnout, whales (large holders) can dominate votes, and legal accountability is still murky in most jurisdictions.`,
+  },
+  {
+    re: /(tokenomics|circulating supply|max supply|token supply|inflationary token|deflationary token|token burn)/i,
+    fn: () => `Tokenomics is the economic design of a crypto asset: total/max supply, circulating supply (what's actually tradable now vs. still locked/vesting), issuance schedule, and utility (what the token is actually used for). A fixed-supply asset like Bitcoin (21M cap) is disinflationary by design. Some projects "burn" tokens (permanently remove them from supply) to counter inflation. Red flag to check as an analyst: a small circulating supply relative to a huge max supply often means heavy future dilution as more tokens unlock.`,
+  },
+  {
+    re: /(layer ?2\b|\bl2\b|rollup|sidechain|scaling solution)/i,
+    fn: () => `Layer-2 networks (e.g. Arbitrum, Optimism, Polygon) sit on top of a base blockchain ("Layer-1", e.g. Ethereum) to process transactions faster and cheaper, then post a compressed proof or batch back to L1 for final security. Rollups are the main design: they bundle thousands of transactions into one L1 transaction. Trade-off: you inherit most of L1's security while cutting fees dramatically, at the cost of some added complexity and (for some designs) a withdrawal delay back to L1.`,
+  },
+  {
+    re: /(\bdex\b|\bcex\b|decentralized exchange|centralized exchange|order book vs amm)/i,
+    fn: () => `A CEX (Centralized Exchange, e.g. Coinbase, Binance) works like a traditional broker: it holds custody of your funds and matches orders on an internal order book — fast, user-friendly, but you trust a company. A DEX (Decentralized Exchange, e.g. Uniswap) lets you trade directly from your own wallet via smart contracts (usually an AMM, not an order book) — you keep custody, but you're exposed to smart-contract risk and, on some chains, higher fees.`,
+  },
+  {
+    re: /(oracle problem|price oracle|chainlink)/i,
+    fn: () => `Blockchains can't natively read outside data (e.g. a stock price, a sports score) — that's the "oracle problem." Oracles (e.g. Chainlink) are services that feed real-world data on-chain so smart contracts can act on it. This reintroduces a point of trust/failure into an otherwise trustless system: if the oracle is manipulated or lagged, exploits follow (a common cause of DeFi hacks — feeding a manipulated price to drain a lending protocol).`,
+  },
+  {
+    re: /(51%|double.?spend)/i,
+    fn: () => `A 51% attack happens when a single entity controls more than half of a network's mining power (PoW) or staked capital (PoS), letting them rewrite recent transaction history and "double-spend" — spend the same coins twice. It's economically impractical on large networks like Bitcoin (the hardware/energy cost dwarfs the potential gain) but has happened on smaller-cap chains with less distributed hash power (e.g. Ethereum Classic, Bitcoin Gold).`,
+  },
+  {
+    re: /(\bkyc\b|\baml\b|crypto regulation|\bmica\b|travel rule)/i,
+    fn: () => `KYC (Know Your Customer) and AML (Anti-Money Laundering) are regulatory requirements forcing exchanges to verify user identity and monitor for illicit flows — this is why centralized exchanges ask for ID. Regulatory frameworks are still maturing: the EU's MiCA (Markets in Crypto-Assets, in force since 2024) is one of the first comprehensive regimes, covering stablecoin issuance and exchange licensing. Regulation is a double-edged sword for crypto: it adds legitimacy and investor protection but reduces the permissionless, pseudonymous nature that drew early adopters.`,
+  },
+  {
+    re: /(\bcbdc\b|central bank digital currency)/i,
+    fn: () => `A CBDC (Central Bank Digital Currency) is a digital form of a country's official currency, issued and backed directly by its central bank — unlike crypto, it's centralized and not meant to be scarce or speculative. Examples in development/pilot: the digital euro, China's e-CNY. Goals typically cited: payment efficiency, financial inclusion, monetary policy transmission. Criticism: potential for granular state surveillance of every transaction, unlike cash.`,
+  },
+  {
+    re: /(algorithmic stablecoin|collateralized stablecoin|\busdt\b|\busdc\b|\bdai\b|stablecoin depeg|stablecoin type)/i,
+    fn: () => `Not all stablecoins work the same way. Fiat-collateralized (USDT, USDC): backed 1:1 by dollar reserves held off-chain — simple, but relies on trusting the issuer's audits/reserves. Crypto-collateralized (DAI): backed by an over-collateralized basket of crypto locked in smart contracts (e.g. $150 of ETH backing $100 of DAI) — more decentralized, but still exposed to the volatility of the collateral. Algorithmic stablecoins try to hold the peg with code and incentives instead of full collateral — much riskier, as shown by TerraUSD's collapse in 2022, which wiped out ~$40B in days.`,
   },
   {
     re: /(crypto|bitcoin|btc|ethereum|eth|solana|stablecoin|blockchain)/i,
@@ -213,6 +285,10 @@ const RULES = [
   {
     re: /(dividend|yield|payout)/i,
     fn: () => `A dividend is the share of profit a company returns to shareholders, often annually or quarterly. "Dividend yield" = annual dividend ÷ stock price (e.g. $3 dividend on a $100 stock = 3%). Beware of the high-yield trap: a 10% yield often hides a collapsed stock price. A regular and growing dividend is a better signal than a huge one.`,
+  },
+  {
+    re: /(sharpe ratio|risk.?adjusted return|sortino ratio)/i,
+    fn: () => `The Sharpe ratio measures return earned per unit of risk taken: (Portfolio Return − Risk-Free Rate) ÷ Volatility (standard deviation). A higher Sharpe ratio means better risk-adjusted performance — two portfolios can have the same return, but the one with lower volatility to get there has the better Sharpe ratio. Rule of thumb: > 1 is considered good, > 2 is very good. Limitation: it penalizes upside volatility the same as downside, which is why the Sortino ratio (using only downside deviation) is sometimes preferred.`,
   },
   {
     re: /(p\/e|pe ratio|price.?earning|valuation|overvalued|undervalued|earnings)/i,
@@ -249,6 +325,50 @@ const RULES = [
   {
     re: /(stock market|what is a stock|how does it work|beginner|getting started|start investing)/i,
     fn: () => `A stock is a share of ownership in a company: you hold a piece of its future profits. Its price fluctuates continuously based on supply and demand. To start well: 1) first build an emergency fund (3-6 months of expenses), 2) invest regularly (DCA) rather than all at once, 3) diversify (a World ETF does most of the work), 4) only invest money you won't need for 8+ years. This simulator is here to practice all of this risk-free.`,
+  },
+  {
+    re: /(call option|put option|strike price|option premium|options? contract)/i,
+    fn: () => `An option gives the right, but not the obligation, to buy (call) or sell (put) an asset at a fixed "strike" price before/at expiration, in exchange for an upfront premium. Buying a call = betting the price rises (max loss = premium paid, unlimited upside). Buying a put = betting the price falls, or hedging a position you own. Selling (writing) options flips the risk: capped gain (the premium) but potentially large losses. Options are leverage tools — small premium, large notional exposure — which is exactly why they amplify both gains and losses.`,
+  },
+  {
+    re: /(future contract|forward contract|\bfutures\b|\bforwards\b|\bswap\b|derivative)/i,
+    fn: () => `A derivative is a contract whose value derives from an underlying asset (a stock, a rate, a commodity) rather than being that asset itself. Forward: a private, customized agreement to trade an asset at a set price on a future date. Future: the same idea, but standardized and traded on an exchange (daily margin, no counterparty risk). Swap: two parties exchange cash flows (e.g. fixed rate for floating rate). Original purpose: hedging (a farmer locks in a wheat price); in practice, most volume today is speculation.`,
+  },
+  {
+    re: /(short sell|shorting|margin call|leverage\b|margin trading|borrow(ed)? stock)/i,
+    fn: () => `Short selling means borrowing a stock, selling it immediately, and hoping to buy it back cheaper later to return it — profiting from a price drop. Unlike a normal "long" position, the loss is theoretically unlimited (a stock can rise forever, but can only fall to $0). Leverage/margin means trading with borrowed money to amplify a position: gains are magnified, but so are losses, and a margin call forces you to add cash or get liquidated if the position moves against you past a threshold. This is exactly why this simulator uses virtual, unleveraged money for beginners.`,
+  },
+  {
+    re: /(\bcapm\b|capital asset pricing model|\bbeta\b coefficient|systematic risk|cost of equity)/i,
+    fn: () => `CAPM (Capital Asset Pricing Model) estimates the expected return an investor should require for a stock: Expected Return = Risk-Free Rate + Beta × (Market Return − Risk-Free Rate). Beta measures a stock's sensitivity to the overall market: beta = 1 moves with the market, > 1 amplifies market swings (more volatile), < 1 dampens them. It only captures systematic (market-wide) risk — the risk diversification can't remove — not company-specific (unsystematic) risk, which CAPM assumes you've already diversified away.`,
+  },
+  {
+    re: /(\bwacc\b|weighted average cost of capital)/i,
+    fn: () => `WACC (Weighted Average Cost of Capital) is the blended rate a company pays to finance itself, weighting the cost of equity and the (after-tax) cost of debt by their share of the capital structure: WACC = (E/V)×Re + (D/V)×Rd×(1−Tax rate). It's the standard discount rate used to value a company's future cash flows (DCF) and to judge whether a project or investment creates value — a project only adds value if its expected return exceeds the WACC.`,
+  },
+  {
+    re: /(\bnpv\b|\birr\b|discounted cash flow|net present value|internal rate of return|\bdcf\b)/i,
+    fn: () => `NPV (Net Present Value) discounts a project's future cash flows back to today at a chosen rate (often the WACC) and subtracts the initial investment: NPV > 0 means the project creates value. IRR (Internal Rate of Return) is the discount rate that makes NPV exactly zero — the project's "break-even" return; compare it to your cost of capital to accept/reject. DCF (Discounted Cash Flow) is the broader valuation method underlying both: estimate future free cash flows, discount them to present value, sum them up.`,
+  },
+  {
+    re: /(\bebitda\b|balance sheet|income statement|cash flow statement|financial statement)/i,
+    fn: () => `EBITDA (Earnings Before Interest, Taxes, Depreciation & Amortization) approximates a company's operating cash-generating ability, stripping out financing and accounting choices — useful for comparing companies with different debt levels or tax regimes. It appears on the income statement (profit over a period). The balance sheet is a snapshot at one point in time (assets = liabilities + equity). The cash flow statement tracks actual cash moving in/out (operating, investing, financing) — the one statement that can't be "dressed up" with accounting choices the way reported profit sometimes can.`,
+  },
+  {
+    re: /(\barbitrage\b)/i,
+    fn: () => `Arbitrage means simultaneously buying and selling the same (or equivalent) asset in different markets to profit from a price discrepancy with virtually no risk — e.g. a stock trading at $100 on one exchange and $100.10 on another. In practice, these gaps are tiny and closed within milliseconds by algorithmic traders, which is also why markets are considered fairly efficient: arbitrageurs' own trading pushes the mismatched prices back together.`,
+  },
+  {
+    re: /(market order|limit order|stop.?loss|stop.?limit|order type)/i,
+    fn: () => `Market order: executes immediately at the best available price — guarantees execution, not price. Limit order: executes only at your specified price or better — guarantees price, not execution (it may never fill). Stop-loss order: becomes a market order once a trigger price is hit — used to cap downside automatically. Combining them (stop-limit) trades off certainty of execution against certainty of price; in fast-moving markets a stop-loss can still execute well below your trigger ("slippage").`,
+  },
+  {
+    re: /(efficient market|random walk|market efficiency|emh\b)/i,
+    fn: () => `The Efficient Market Hypothesis (EMH) argues that asset prices already reflect all available information, so consistently "beating the market" through stock-picking or timing is largely luck, not skill — prices follow something close to a random walk. It comes in three flavors: weak (past prices don't predict future ones), semi-strong (public information is already priced in), strong (even private/insider information is priced in — the most contested form). It's the theoretical backbone for why low-cost index investing outperforms most active managers over the long run, though behavioral finance points to real anomalies (bubbles, herding) that pure EMH struggles to explain.`,
+  },
+  {
+    re: /(hedge fund|private equity|alternative investment|venture capital)/i,
+    fn: () => `Alternative investments sit outside traditional stocks/bonds. Hedge funds pool capital and pursue varied, often leveraged or derivative-heavy strategies (long/short, macro, arbitrage) aiming for returns uncorrelated with the market — high fees ("2 and 20": 2% management + 20% of profits), typically restricted to accredited/institutional investors. Private equity buys entire (often private) companies, restructures them, and exits years later — illiquid, long lock-ups. Venture capital funds early-stage startups for equity, expecting most to fail and a few to return the whole fund. All three trade liquidity and access for the potential of higher, less-correlated returns.`,
   },
 ];
 
